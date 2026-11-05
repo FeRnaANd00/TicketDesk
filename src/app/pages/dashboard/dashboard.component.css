@@ -1,0 +1,89 @@
+/**
+ * =============================================================================
+ * ESTILOS DEL DASHBOARD - TICKETDESK
+ * =============================================================================
+ * Ubicación: src/app/pages/dashboard/dashboard.component.css
+ * 
+ * Este archivo complementa las clases de Tailwind CSS, añadiendo animaciones
+ * personalizadas y ajustes de comportamiento para los elementos interactivos.
+ */
+
+/* 
+ * Definición del Host: 
+ * Asegura que el componente se comporte como un elemento de bloque 
+ * para que el fondo ocupe todo el ancho disponible.
+ */
+:host {
+  display: block;
+}
+
+/**
+ * ANIMACIONES DE INTERFAZ
+ */
+
+/* 
+ * Animación de Entrada Suave (Fade-In):
+ * Se aplica a los contenedores para que aparezcan deslizándose hacia arriba.
+ */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* 
+ * Definición de Keyframes para fadeIn:
+ * Comienza con opacidad 0 y un ligero desplazamiento hacia abajo (10px).
+ */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+/* 
+ * Animación de Carga (Spinner):
+ * Rotación infinita de 360 grados para el círculo de carga.
+ */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/**
+ * INTERACCIONES DE COMPONENTES
+ */
+
+/* 
+ * Efecto Hover en Tarjetas (.group):
+ * Cuando el usuario pasa el mouse, la tarjeta sube ligeramente (4px)
+ * utilizando una curva de Bezier para un movimiento natural y fluido.
+ */
+.group:hover {
+  transform: translateY(-4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * AJUSTES DE ICONOGRAFÍA (Material Symbols)
+ */
+
+/* 
+ * Alineación de Iconos:
+ * Asegura que los iconos de Google Material se centren perfectamente
+ * tanto vertical como horizontalmente respecto al texto acompañante.
+ */
+.material-symbols-outlined {
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

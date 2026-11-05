@@ -1,0 +1,112 @@
+<!-- 
+  CONTENEDOR PRINCIPAL
+  - min-h-screen: Ocupa el alto total de la ventana.
+  - flex: Centra el contenido vertical y horizontalmente.
+  - bg-[#f8f9ff]: Color de fondo suave para evitar la fatiga visual.
+-->
+<main class="min-h-//screen w-full flex flex-col justify-center items-center p-4 md:p-8 bg-[#f8f9ff]">
+  
+  <!-- TARJETA DE REGISTRO
+       - max-w-5xl: Limita el ancho en pantallas desktop.
+       - flex-col lg:flex-row: Diseño responsivo (columna en móvil, fila en desktop).
+       - shadow-2xl rounded-3xl: Estética moderna con sombras profundas y bordes redondeados.
+  -->
+  <div class="w-full max-w-5xl flex flex-col lg:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white">
+    
+    <!-- PANEL IZQUIERDO: Branding y Motivación
+         - bg-gradient-to-br: Degradado rojo corporativo.
+         - relative: Para permitir el posicionamiento del elemento decorativo difuminado.
+    -->
+    <div class="relative w-full lg:w-5/12 bg-gradient-to-br from-[#bb0112] to-red-800 text-white p-8 lg:p-12 flex flex-col justify-between overflow-hidden">
+      
+      <!-- Elemento visual: Círculo blanco difuminado para dar profundidad al diseño -->
+      <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+      
+      <!-- Bloque de Texto Informativo -->
+      <div class="relative z-10">
+        <!-- Logo Corporativo -->
+        <div class="flex items-center mb-8">
+          <img alt="Logo" class="h-12 w-auto object-contain filter drop-shadow-md" src="/claudecode.png"/>
+        </div>
+        
+        <!-- Mensajes de Bienvenida para nuevos agentes -->
+        <div class="space-y-4">
+          <span class="block font-semibold tracking-widest uppercase text-red-100 text-sm">Únete a la Mesa de Ayuda</span>
+          <h1 class="text-4xl lg:text-5xl font-bold leading-tight">Crea tu cuenta de agente.</h1>
+          <p class="text-red-100/90 text-lg">Regístrate para comenzar a gestionar incidencias y brindar soporte eficiente.</p>
+        </div>
+      </div>
+      
+      <!-- Imagen Ilustrativa: Refuerza el concepto de soporte técnico -->
+      <div class="relative z-10 my-8 flex justify-center">
+        <img alt="Soporte" class="w-full max-w-sm h-auto object-contain drop-shadow-2xl rounded-2xl" src="/soporte-ilustracion.svg"/>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: Formulario de Captura de Datos
+         - w-full lg:w-7/12: Espacio predominante para el formulario.
+         - p-8 md:p-16: Padding amplio para mejorar la legibilidad.
+    -->
+    <div class="w-full lg:w-7/12 p-8 md:p-16 flex flex-col justify-center bg-white">
+      <div class="max-w-md w-full mx-auto space-y-8">
+        
+        <!-- Encabezado del Formulario -->
+        <div class="space-y-2">
+          <h2 class="text-3xl font-bold tracking-tight text-[#121c2a]">Crear cuenta en TicketDesk</h2>
+          <p class="text-[#584237]">Ingresa tus datos para obtener acceso al sistema de soporte.</p>
+        </div>
+        
+        <!-- Formulario de Registro
+             - (submit): Ejecuta onRegister() y previene el refresco de página.
+        -->
+        <form class="space-y-6" (submit)="onRegister(); $event.preventDefault()">
+          
+          <!-- Campo: Correo electrónico -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Correo electrónico corporativo</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">mail</span>
+              </div>
+              <input [(ngModel)]="email" name="email" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="ejemplo@empresa.com" required type="email"/>
+            </div>
+          </div>
+          
+          <!-- Campo: Contraseña -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Contraseña</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">lock</span>
+              </div>
+              <input [(ngModel)]="password" name="password" type="password" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="••••••••" required/>
+            </div>
+          </div>
+          
+          <!-- Campo: Confirmar Contraseña -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Confirmar Contraseña</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">check_circle</span>
+              </div>
+              <input [(ngModel)]="confirmPassword" name="confirmPassword" type="password" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="••••••••" required/>
+            </div>
+          </div>
+          
+          <!-- Botón de Acción Principal -->
+          <button [disabled]="isLoading" class="w-full py-3.5 rounded-xl bg-[#bb0112] hover:bg-red-700 text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:bg-red-400" type="submit">
+            <span *ngIf="!isLoading">Registrar Cuenta</span>
+            <span *ngIf="isLoading" class="animate-pulse">Creando cuenta...</span>
+            <span *ngIf="!isLoading" class="material-symbols-outlined">person_add</span>
+          </button>
+        </form>
+        
+        <!-- Enlace de navegación al Login -->
+        <div class="text-center">
+          <p class="text-sm text-[#584237]">¿Ya tienes una cuenta? <a class="font-semibold text-[#bb0112] hover:underline" routerLink="/login">Inicia sesión aquí</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

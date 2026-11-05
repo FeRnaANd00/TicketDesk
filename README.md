@@ -1,59 +1,42 @@
-# PracticandoAngular
+# TicketDesk - Sistema de Gestión de Incidencias
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+TicketDesk es una plataforma centralizada de soporte interno diseñada para resolver incidencias corporativas de manera ágil y clara.
 
-## Development server
+## 🚀 Características Principales
+- **Autenticación Corporativa**: Acceso seguro mediante Firebase Auth.
+- **Gestión de Tickets**: Operaciones completas de creación, lectura, actualización y eliminación (CRUD).
+- **Diseño Moderno**: Interfaz responsiva construida con Angular y Tailwind CSS.
+- **Almacenamiento en Tiempo Real**: Integración con Firebase Firestore para datos persistentes y actualizados.
 
-To start a local development server, run:
+## 🛠️ Tecnologías Utilizadas
+- **Frontend**: Angular 22
+- **Estilos**: Tailwind CSS 3
+- **Backend/DB**: Firebase (Auth & Firestore)
+- **Iconografía**: Google Material Symbols
 
-```bash
-ng serve
-```
+## ⚙️ Instalación y Ejecución
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### Requisitos Previos
+- Node.js (versión compatible con Angular 22)
+- npm
 
-## Code scaffolding
+### Pasos para ejecutar localmente
+1. Clona el repositorio.
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+3. Inicia el servidor de desarrollo:
+   ```bash
+   npm run start
+   ```
+4. Abre tu navegador en `http://localhost:4200/`.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 📁 Estructura del Proyecto
+- `src/app/core`: Configuraciones globales y servicios base (ej. `firebase.config.ts`).
+- `src/app/models`: Definiciones de interfaces y tipos de datos (ej. `ticket.ts`).
+- `src/app/services`: Lógica de negocio y comunicación con la API/DB (ej. `tickets.ts`).
+- `src/app/pages`: Componentes de vista y pantallas de la aplicación.
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## 📝 Nota sobre el Desarrollo
+Todo el código ha sido documentado siguiendo el estándar JSDoc para facilitar el mantenimiento y la escalabilidad del sistema.

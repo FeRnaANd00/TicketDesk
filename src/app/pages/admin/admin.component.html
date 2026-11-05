@@ -1,0 +1,98 @@
+<!-- 
+  CONTENEDOR PRINCIPAL DE ADMINISTRACIÓN
+  - bg-[#f8f9ff]: Fondo suave consistente con el resto de la aplicación.
+  - p-4 md:p-8: Espaciado responsivo.
+-->
+<main class="min-h-screen w-full p-4 md:p-8 bg-[#f8f9ff]">
+  
+  <!-- CABECERA DE LA SECCIÓN
+       - flex justify-between: Separa el título del botón de acción.
+       - mb-8: Espacio inferior para separar el título de la tabla.
+  -->
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-[#121c2a]">Gestión de Usuarios</h1>
+      <p class="text-[#584237]">Administra los roles y permisos de los agentes de TicketDesk.</p>
+    </div>
+    
+    <!-- Botón para refrescar la lista de usuarios -->
+    <button (click)="loadUsers()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all shadow-sm">
+      <span class="material-symbols-outlined text-lg">refresh</span>
+      Actualizar Lista
+    </button>
+  </div>
+
+  <!-- TARJETA DE LA TABLA
+       - bg-white rounded-3xl shadow-xl: Estética moderna y limpia.
+       - overflow-hidden: Asegura que los bordes redondeados se apliquen a la tabla interna.
+  -->
+  <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+    
+    <!-- ESTADO DE CARGA
+         - Centrado y visible mientras isLoading es true.
+    -->
+    <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-20 space-y-4">
+      <div class="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+      <p class="text-gray-500 font-medium">Cargando usuarios...</p>
+    </div>
+
+    <!-- TABLA DE USUARIOS
+         - hidden: Se oculta mientras se están cargando los datos.
+    -->
+    <div *ngIf="!isLoading" class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <!-- Cabecera de la Tabla -->
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Usuario</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Departamento</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Rol Actual</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-right">Acciones</th>
+          </tr>
+        </thead>
+        
+        <!-- Cuerpo de la Tabla -->
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let user of users" class="hover:bg-gray-50 transition-colors">
+            <!-- Columna Nombre -->
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">
+                  {{ user.username.substring(0,2).toUpperCase() }}
+                </div>
+                <span class="font-medium text-gray-800">{{ user.username }}</span>
+              </div>
+            </td>
+            <!-- Columna Email -->
+            <td class="px-6 py-4 text-sm text-gray-600">{{ user.email }}</td>
+            <!-- Columna Departamento -->
+            <td class="px-6 py-4 text-sm text-gray-600">{{ user.department }}</td>
+            <!-- Columna Rol con Badge de Color -->
+            <td class="px-6 py-4">
+              <span [ngClass]="{
+                'bg-red-100 text-red-700': user.role === 'admin',
+                'bg-blue-100 text-blue-700': user.role === 'user'
+              }" class="px-2 py-1 rounded-full text-xs font-bold uppercase">
+                {{ user.role }}
+              </span>
+            </td>
+            <!-- Columna Acciones: Botón para cambiar el rol -->
+            <td class="px-6 py-4 text-right">
+              <button (click)="toggleRole(user)" class="px-3 py-1.5 text-xs font-semibold text-white bg-gray-800 rounded-lg hover:bg-black transition-all active:scale-95">
+                Cambiar a {{ user.role === 'admin' ? 'Usuario' : 'Admin' }}
+              </button>
+            </td>
+          </tr>
+          
+          <!-- Mensaje si no hay usuarios -->
+          <tr *ngIf="users.length === 0">
+            <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
+              No se encontraron usuarios registrados en el sistema.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>

@@ -1,0 +1,164 @@
+<!-- 
+  =============================================================================
+  VISTA DEL DASHBOARD - TICKETDESK
+  =============================================================================
+  Ubicación: src/app/pages/dashboard/dashboard.component.html
+  
+  Estructura de Diseño:
+  1. Estado de Carga (isLoading)
+  2. Estado de Error (hasError)
+  3. Contenido Principal (Visibilidad basada en roles)
+-->
+
+<main class="min-h-screen w-full p-4 md:p-8 bg-[#f8f9ff]">
+  
+  <!-- 
+    BLOQUE 1: ESTADO DE CARGA 
+    - Se renderiza únicamente mientras isLoading es TRUE.
+    - Muestra un spinner animado para dar feedback visual al usuario.
+  -->
+  <div *ngIf="isLoading" class="flex flex-col items-center justify-center h-screen space-y-4">
+    <!-- Spinner: Borde circular con una sección coloreada que rota infinitamente -->
+    <div class="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+    <p class="text-gray-500 font-medium">Cargando tu espacio de trabajo...</p>
+  </div>
+
+  <!-- 
+    BLOQUE 2: ESTADO DE ERROR
+    - Se renderiza si la carga terminó (!isLoading) pero ocurrió un fallo (hasError).
+    - Informa al usuario sobre posibles bloqueos de red o AdBlockers.
+  -->
+  <div *ngIf="!isLoading && hasError" class="flex flex-col items-center justify-center h-screen text-center p-6">
+    <!-- Icono de advertencia visual -->
+    <span class="material-symbols-outlined text-6xl text-red-500 mb-4">warning</span>
+    
+    <h2 class="text-2xl font-bold text-[#121c2a] mb-2">No pudimos cargar tu perfil</h2>
+    
+    <p class="text-gray-600 max-w-md mb-6">
+      Es posible que un bloqueador de anuncios, el Firewall de tu red o un problema de conexión esté interfiriendo con la comunicación con Firebase.
+    </p>
+    
+    <!-- Botón de reintento: Llama nuevamente al método loadUserProfile() del TS -->
+    <button (click)="loadUserProfile()" class="px-6 py-2 bg-[#bb0112] text-white font-bold rounded-xl hover:bg-red-700 transition-all">
+      Intentar de nuevo
+    </button>
+  </div>
+
+  <!-- 
+    BLOQUE 3: CONTENIDO PRINCIPAL
+    - Se renderiza solo si la carga terminó y NO hubo errores.
+  -->
+  <div *ngIf="!isLoading && !hasError" class="max-w-7xl mx-auto space-y-8">
+    
+    <!-- 
+      CABECERA DE BIENVENIDA
+      - Elemento visible para TODOS los niveles de acceso.
+      - Muestra el nombre del usuario y su rol actual.
+    -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+      <div>
+        <h1 class="text-3xl font-bold text-[#121c2a]">¡Hola, {{ username }}! 👋</h1>
+        <p class="text-[#584237]">Bienvenido a tu centro de gestión de incidencias.</p>
+      </div>
+      
+      <!-- 
+        BADGE DE ROL:
+        - Cambia de color dinámicamente según el valor de userRole.
+        - Rojo para 'admin', Azul para 'user'.
+      -->
+      <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase" 
+           [ngClass]="{'bg-red-100 text-red-700': userRole === 'admin', 'bg-blue-100 text-blue-700': userRole === 'user'}">
+        <span class="material-symbols-outlined text-sm">shield</span>
+        {{ userRole }}
+      </div>
+    </header>
+
+    <!-- 
+      SECCIÓN GENERAL: DASHBOARD OPERATIVO
+      - Grid de tarjetas visible para Agentes y Administradores.
+    -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- Card: Mis Tickets (Gestión personal) -->
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
+          <span class="material-symbols-outlined text-2xl">confirmation_number</span>
+        </div>
+        <h3 class="text-lg font-bold text-[#121c2a]">Mis Tickets</h3>
+        <p class="text-sm text-gray-500 mb-4">Gestiona las incidencias asignadas a tu nombre.</p>
+        <div class="flex justify-between items-center">
+          <span class="text-2xl font-bold text-[#121c2a]">0</span>
+          <span class="text-xs font-semibold text-blue-600 uppercase">Ver todo</span>
+        </div>
+      </div>
+
+      <!-- Card: Tickets Pendientes (Urgencias) -->
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">
+          <span class="material-symbols-outlined text-2xl">pending_actions</span>
+        </div>
+        <h3 class="text-lg font-bold text-[#121c2a]">Pendientes</h3>
+        <p class="text-sm text-gray-500 mb-4">Revisa los tickets que requieren atención urgente.</p>
+        <div class="flex justify-between items-center">
+          <span class="text-2xl font-bold text-[#121c2a]">0</span>
+          <span class="text-xs font-semibold text-orange-600 uppercase">Revisar</span>
+        </div>
+      </div>
+
+      <!-- Card: Soporte Interno (Ayuda técnica) -->
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
+        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-all">
+          <span class="material-symbols-outlined text-2xl">support_agent</span>
+        </div>
+        <h3 class="text-lg font-bold text-[#121c2a]">Soporte</h3>
+        <p class="text-sm text-gray-500 mb-4">Contacta con la administración del sistema.</p>
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-semibold text-green-600 uppercase">Contactar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 
+      SECCIÓN ADMINISTRATIVA: ACCESO PRIVILEGIADO
+      - Renderizada ÚNICAMENTE si userRole es estrictamente 'admin'.
+      - Proporciona acceso a la gestión de usuarios y reportes globales.
+    -->
+    <div *ngIf="userRole === 'admin'" class="space-y-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-red-600">admin_panel_settings</span>
+        <h2 class="text-2xl font-bold text-[#121c2a]">Panel de Control Administrativo</h2>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Botón de Acceso a Gestión de Agentes (Ruta /admin) -->
+        <div class="bg-white p-8 rounded-3xl shadow-xl border-l-8 border-red-600 flex items-center justify-between group hover:bg-red-50 transition-all cursor-pointer" routerLink="/admin">
+          <div class="flex items-center gap-6">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center shadow-inner">
+              <span class="material-symbols-outlined text-3xl">group</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-[#121c2a]">Gestión de Agentes</h3>
+              <p class="text-gray-500">Asigna roles, crea usuarios y supervisa el equipo.</p>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-gray-400 group-hover:text-red-600 transition-all text-3xl">arrow_forward_ios</span>
+        </div>
+
+        <!-- Botón de Acceso a Reportes Globales (Futuro) -->
+        <div class="bg-white p-8 rounded-3xl shadow-xl border-l-8 border-gray-800 flex items-center justify-between group hover:bg-gray-50 transition-all cursor-pointer">
+          <div class="flex items-center gap-6">
+            <div class="w-16 h-16 bg-gray-100 text-gray-800 rounded-full flex items-center justify-center shadow-inner">
+              <span class="material-symbols-outlined text-3xl">analytics</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-[#121c2a]">Reportes Globales</h3>
+              <p class="text-gray-500">Estadísticas de resolución y rendimiento del sistema.</p>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-gray-400 group-hover:text-gray-800 transition-all text-3xl">arrow_forward_ios</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>

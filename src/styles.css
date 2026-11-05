@@ -1,1 +1,36 @@
-/* You can add global styles to this file, and also import other style files */
+/**
+ * ESTILOS GLOBALES DE TICKETDESK
+ * Este archivo contiene las directivas base de Tailwind CSS y estilos que 
+ * afectan a toda la aplicación independientemente del componente.
+ */
+
+/* --- Directivas Base de Tailwind --- */
+@tailwind base;       /* Reseteo de estilos del navegador (Preflight) */
+@tailwind components; /* Clases de componentes personalizados */
+@tailwind utilities;  /* Clases de utilidad (espaciados, colores, flexbox) */
+
+/* --- Ajustes Generales del Cuerpo --- */
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Estilos globales para scrollbars (estética moderna) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bb0112;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0010e;
+}

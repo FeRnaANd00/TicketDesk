@@ -1,0 +1,50 @@
+/* 
+ * Estilos para el Componente de Registro.
+ * Reutiliza la misma base de animaciones que el login.
+ */
+:host {
+  display: block;
+}
+
+.shadow-2xl {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.drop-shadow-2xl {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse {
+  animation: pulseCustom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulseCustom {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+.material-symbols-outlined {
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+  transform: scale(0.95);
+}

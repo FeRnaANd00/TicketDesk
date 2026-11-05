@@ -1,0 +1,73 @@
+<main class="min-h-screen w-full flex flex-col justify-center items-center p-4 md:p-8 bg-[#f8f9ff]">
+  <div class="w-full max-w-5xl flex flex-col lg:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white">
+    
+    <!-- PANEL IZQUIERDO: Branding -->
+    <div class="relative w-full lg:w-5/12 bg-gradient-to-br from-[#bb0112] to-red-800 text-white p-8 lg:p-12 flex flex-col justify-between overflow-hidden">
+      <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+      <div class="relative z-10">
+        <div class="flex items-center mb-8">
+          <img alt="Logo" class="h-12 w-auto object-contain filter drop-shadow-md" src="/claudecode.png"/>
+        </div>
+        <div class="space-y-4">
+          <span class="block font-semibold tracking-widest uppercase text-red-100 text-sm">Configuración Inicial</span>
+          <h1 class="text-4xl lg:text-5xl font-bold leading-tight">Casi terminamos.</h1>
+          <p class="text-red-100/90 text-lg">Solo necesitamos unos últimos detalles para personalizar tu experiencia en TicketDesk.</p>
+        </div>
+      </div>
+      <div class="relative z-10 my-8 flex justify-center">
+        <img alt="Perfil" class="w-full max-w-sm h-auto object-contain drop-shadow-2xl rounded-2xl" src="/soporte-ilustracion.svg"/>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: Formulario de Perfil -->
+    <div class="w-full lg:w-7/12 p-8 md:p-16 flex flex-col justify-center bg-white">
+      <div class="max-w-md w-full mx-auto space-y-8">
+        <div class="space-y-2">
+          <h2 class="text-3xl font-bold tracking-tight text-[#121c2a]">Completa tu perfil</h2>
+          <p class="text-[#584237]">Estos datos nos ayudarán a organizar la asignación de tickets y la comunicación interna.</p>
+        </div>
+        <form class="space-y-6" (submit)="onSaveProfile(); $event.preventDefault()">
+          
+          <!-- Campo: Nombre de Usuario -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Nombre de Usuario</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </div>
+              <input [(ngModel)]="username" name="username" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="username" required/>
+            </div>
+          </div>
+          
+          <!-- Campo: Departamento -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Departamento</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">corporate_fare</span>
+              </div>
+              <input [(ngModel)]="department" name="department" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="department" required/>
+            </div>
+          </div>
+          
+          <!-- Campo: Teléfono -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-[#121c2a]">Número de Teléfono</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#584237]">
+                <span class="material-symbols-outlined text-xl">phone</span>
+              </div>
+              <input [(ngModel)]="phone" name="phone" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="phone" required/>
+            </div>
+          </div>
+          
+          <button [disabled]="isLoading" class="w-full py-3.5 rounded-xl bg-[#bb0112] hover:bg-red-700 text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:bg-red-400" type="submit">
+            <span *ngIf="!isLoading">Finalizar Registro</span>
+            <span *ngIf="isLoading" class="animate-pulse">Guardando datos...</span>
+            <span *ngIf="!isLoading" class="material-symbols-outlined">done_all</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>

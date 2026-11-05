@@ -1,12 +1,28 @@
+<!-- 
+  CONTENEDOR PRINCIPAL
+  - min-h-screen: Asegura que ocupe todo el alto de la pantalla.
+  - flex: Centra el contenido tanto vertical como horizontalmente.
+  - bg-[#f8f9ff]: Fondo grisáceo muy claro para dar contraste con la tarjeta blanca.
+-->
 <main class="min-h-screen w-full flex flex-col justify-center items-center p-4 md:p-8 bg-[#f8f9ff]">
+  
+  <!-- TARJETA CONTENEDORA (Login Card)
+       - max-w-5xl: Limita el ancho máximo en pantallas grandes.
+       - flex-col lg:flex-row: Se apila en móviles y se pone lado a lado en pantallas grandes (Desktop).
+       - shadow-2xl rounded-3xl: Sombra profunda y bordes muy redondeados para aspecto moderno.
+       - overflow-hidden: Evita que el contenido se salga de los bordes redondeados.
+  -->
   <div class="w-full max-w-5xl flex flex-col lg:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white">
     
-    <!-- PANEL IZQUIERDO: Branding -->
+    <!-- PANEL IZQUIERDO: Branding
+         - bg-gradient-to-br: Crea un degradado diagonal desde el rojo corporativo hacia un rojo más oscuro.
+         - relative: Permite posicionar elementos absolutos dentro (como los círculos de fondo).
+    -->
     <div class="relative w-full lg:w-5/12 bg-gradient-to-br from-[#bb0112] to-red-800 text-white p-8 lg:p-12 flex flex-col justify-between overflow-hidden">
       <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
       <div class="relative z-10">
         <div class="flex items-center mb-8">
-          <img alt="Logo" class="h-12 w-auto object-contain filter drop-shadow-md" src="https://lh3.googleusercontent.com/aida/AEtjO1U3p7wUunUiBr00qZfVp4fgGfI2fpS9MCiDFDR-rrckr0vt6CLSUYva1-lRc4YrGcYpsh5WBTT1IhfPtn0xdOAY5ym4D8vPbh1h1I63Q7I4WH5lfO74HI2OUggYb7sIpp_6zPQjD2KdTbv_qdoyLvcYagg883fRVbFddpuFo-DDKQtHAvG6vW8MHFmBwGdebTur4aWizZ6rQ2mgpgSzujsaYC5qUV9FJBJdnP-g5JiHi0FUElwxb93inGc"/>
+          <img alt="Logo" class="h-12 w-auto object-contain filter drop-shadow-md" src="/claudecode.png"/>
         </div>
         <div class="space-y-4">
           <span class="block font-semibold tracking-widest uppercase text-red-100 text-sm">Mesa de Ayuda Corporativa</span>
@@ -15,11 +31,13 @@
         </div>
       </div>
       <div class="relative z-10 my-8 flex justify-center">
-        <img alt="Soporte" class="w-full max-w-sm h-auto object-contain drop-shadow-2xl rounded-2xl" src="https://lh3.googleusercontent.com/aida/AEtjO1X312lWa9M0JyR_1wMW8MlLvwUYoKkwaC7Kcx0BNFp0cZ06LG5BFzxIY0QT2ejzaMRoGskCgJL3ShThOUFqIeY8ZTj6BEuhSvGELpvUAW9IScHKT4W2uyFDMxrvu5QvliYMeo7EJjbG3nCtMYZIetvVWubl62DcKV6pQHg9Bx-qk8qlASMrzYIVCo-gWSKA0JO8Fh7Ce5RFtJ6dziCfPCRX6YpieyX_fOQNyfLkSGj7ZqBi4uU8IyFvELg"/>
+        <img alt="Soporte" class="w-full max-w-sm h-auto object-contain drop-shadow-2xl rounded-2xl" src="/soporte-ilustracion.svg"/>
       </div>
     </div>
 
-    <!-- PANEL DERECHO: Login -->
+    <!-- PANEL DERECHO: Login
+         - w-full lg:w-7/12 p-8 md:p-16 flex flex-col justify-center bg-white.
+    -->
     <div class="w-full lg:w-7/12 p-8 md:p-16 flex flex-col justify-center bg-white">
       <div class="max-w-md w-full mx-auto space-y-8">
         <div class="space-y-2">
@@ -53,7 +71,10 @@
               <input [(ngModel)]="rememberMe" name="remember" class="w-4 h-4 accent-[#bb0112] cursor-pointer" type="checkbox"/>
               <span class="text-sm text-[#584237]">Recordarme</span>
             </label>
-            <a class="text-sm font-semibold text-[#bb0112] hover:underline" href="#recuperar">¿Olvidaste tu contraseña?</a>
+            <div class="flex gap-3">
+              <a class="text-sm font-semibold text-[#bb0112] hover:underline" href="#recuperar">¿Olvidaste tu contraseña?</a>
+              <a class="text-sm font-semibold text-[#bb0112] hover:underline" routerLink="/register">Regístrate</a>
+            </div>
           </div>
           <button [disabled]="isLoading" class="w-full py-3.5 rounded-xl bg-[#bb0112] hover:bg-red-700 text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:bg-red-400" type="submit">
             <span *ngIf="!isLoading">Iniciar sesión</span>
@@ -61,6 +82,20 @@
             <span *ngIf="!isLoading" class="material-symbols-outlined">arrow_forward</span>
           </button>
         </form>
+
+        <!-- SECCIÓN DE AUTENTICACIÓN EXTERNA -->
+        <div class="relative flex items-center py-4">
+          <div class="flex-grow border-t border-gray-200"></div>
+          <span class="flex-shrink mx-4 text-gray-400 text-sm">o utiliza</span>
+          <div class="flex-grow border-t border-gray-200"></div>
+        </div>
+
+        <!-- Botón de Google: Diseñado para seguir las guías de marca de Google -->
+        <button (click)="loginWithGoogle()" [disabled]="isLoading" class="w-full py-3 rounded-xl bg-white border border-gray-300 text-gray-700 font-semibold shadow-sm transition-all flex items-center justify-center gap-3 hover:bg-gray-50 active:scale-[0.98] disabled:bg-gray-100">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" class="w-5 h-5"/>
+          <span>Continuar con Google</span>
+        </button>
+
       </div>
     </div>
   </div>

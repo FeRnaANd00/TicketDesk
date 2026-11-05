@@ -1,0 +1,89 @@
+/* 
+ * Estilos personalizados para el Componente de Login.
+ * Nota: La mayor parte del diseño se gestiona mediante clases de Tailwind CSS en el HTML.
+ * Este archivo se utiliza para animaciones y ajustes finos.
+ */
+
+:host {
+  display: block;
+}
+
+/* --- Animaciones --- */
+
+/* Animación de entrada suave para la tarjeta contenedora */
+.shadow-2xl {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Animación de "flotación" para la imagen de soporte en el panel izquierdo 
+.drop-shadow-2xl {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Animación de pulso suave para el botón cuando está en estado de carga */
+.animate-pulse {
+  animation: pulseCustom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- Keyframes --- */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulseCustom {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* --- Ajustes Finos --- */
+
+/* Asegurar que los iconos de Material Symbols estén perfectamente centrados */
+.material-symbols-outlined {
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilo para mejorar la transición de los inputs al hacer foco */
+input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Efecto de clic en el botón principal */
+button:active {
+  transform: scale(0.95);
+}
+
+/* Estilo específico para el botón de Google para mejorar el feedback visual */
+.google-btn {
+  transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+.google-btn:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
