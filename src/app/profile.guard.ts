@@ -2,71 +2,85 @@ import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { auth, db } from './core/firebase.config';
 import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 /**
  * =============================================================================
- * GUARDIA DE PERFIL: ProfileGuard
+ * GUARDIA DE PERFIL: ProfileGuard (Versión con Persistencia de Sesión)
  * =============================================================================
  * Ubicación: src/app/profile.guard.ts
  * 
- * El ProfileGuard es un middleware de seguridad que intercepta las rutas para 
- * asegurar que el usuario no solo esté autenticado, sino que también haya 
- * completado su registro obligatorio en la base de datos de Firestore.
+ * Esta guardia es la encargada de asegurar que el usuario esté autenticado 
+ * y que su perfil esté completado antes de acceder a rutas protegidas.
  * 
- * Flujo de Validación:
- * 1. Verifica si hay un usuario autenticado en Firebase Auth.
- * 2. Consulta la colección 'users' en Firestore usando el UID del usuario.
- * 3. Si el documento existe, permite el acceso.
- * 4. Si no existe, redirige a '/complete-profile'.
+ * PROBLEMA SOLUCIONADO: "El salto al Login al recargar".
+ * Al recargar la página, Firebase tarda unos milisegundos en restaurar la sesión.
+ * Esta versión implementa una espera activa mediante 'onAuthStateChanged' para 
+ * evitar redirecciones falsas cuando el usuario sí está logueado.
  */
 
 /**
  * CONFIGURACIÓN DE EMERGENCIA (DEBUG)
- * ----------------------------------
- * BYPASS_PROFILE_CHECK: Cuando es TRUE, la guardia ignora la verificación de Firestore
- * y permite el acceso directo. Se utiliza para mitigar errores de red como 
- * 'ERR_BLOCKED_BY_CLIENT' durante la fase de desarrollo en entornos restringidos.
+ * -----------------------------------
+ * BYPASS_PROFILE_CHECK: Cuando es TRUE, la guardia permite el acceso directo.
+ * Útil para pruebas rápidas de interfaz sin depender de la base de datos.
  */
 const BYPASS_PROFILE_CHECK = true;
 
 export const profileGuard: CanActivateFn = async (route, state) => {
   const router = inject(Router);
-  const user = auth.currentUser;
 
-  // 1. Validación de Autenticación Básica
-  if (!user) {
-    console.warn('⚠️ [ProfileGuard] Intento de acceso sin usuario autenticado.');
-    router.navigate(['/login']);
-    return false;
-  }
-
-  // 2. Modo de Bypass para Desarrollo
-  if (BYPASS_PROFILE_CHECK) {
-    console.log('🛡️ [ProfileGuard] MODO SEGURO ACTIVO: Saltando verificación de Firestore.');
-    return true; // Permite el acceso sin consultar la base de datos
-  }
+  /**
+   * FUNCIÓN AUXILIAR: waitForAuth
+   * ---------------------------
+   * Envuelve el observador 'onAuthStateChanged' de Firebase en una Promesa.
+   * Esto obliga a la Guardia a detenerse y esperar hasta que Firebase confirme 
+   * si hay un usuario autenticado o no, eliminando el problema de la recarga de página.
+   */
+  const waitForAuth = (): Promise<any> => {
+    return new Promise((resolve) => {
+      onAuthStateChanged(auth, (user) => {
+        resolve(user);
+      });
+    });
+  };
 
   try {
-    // 3. Verificación de Perfil en Firestore
-    // Consultamos si existe el documento del usuario en la colección 'users'
+    // 1. ESPERA ACTIVA: Aguardamos a que Firebase restaure la sesión del navegador
+    const user = await waitForAuth();
+
+    // 2. Validación de Autenticación
+    if (!user) {
+      console.warn('⚠️ [ProfileGuard] No se detectó sesión activa. Redirigiendo al Login.');
+      router.navigate(['/login']);
+      return false;
+    }
+
+    // 3. Modo de Bypass para Desarrollo
+    if (BYPASS_PROFILE_CHECK) {
+      console.log('🛡️ [ProfileGuard] MODO SEGURO ACTIVO: Acceso concedido sin verificar perfil.');
+      return true; 
+    }
+
+    // 4. Verificación de Perfil en Firestore
+    // Una vez confirmado que el usuario existe, verificamos que tenga sus datos completos.
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (userDoc.exists()) {
-      // El perfil está completo -> Permitir acceso
+      // Perfil completado -> Acceso permitido
       return true;
     } else {
-      // El perfil no existe -> Redirigir al formulario de completado
-      console.warn('⚠️ [ProfileGuard] Usuario autenticado pero sin perfil completado.');
+      // Usuario autenticado pero sin datos -> Redirigir a completar perfil
+      console.warn('⚠️ [ProfileGuard] Usuario sin perfil. Redirigiendo a /complete-profile.');
       router.navigate(['/complete-profile']);
       return false;
     }
   } catch (error) {
     /**
-     * Manejo de errores de red (ej. ERR_BLOCKED_BY_CLIENT).
-     * Si ocurre un error de conexión, redirigimos al login para evitar 
-     * que la aplicación se quede en un estado indeterminado.
+     * Manejo de errores críticos de conexión.
+     * En caso de fallo total, se redirige al login por seguridad.
      */
-    console.error('❌ [ProfileGuard] Error crítico al verificar el perfil:', error);
+    console.error('❌ [ProfileGuard] Error crítico durante la validación:', error);
     router.navigate(['/login']);
     return false;
   }

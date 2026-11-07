@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { environment } from '../../environments/environment';
 
 /**
@@ -22,9 +22,6 @@ const app = initializeApp(environment.firebase);
 /**
  * Configuración Avanzada de Firestore.
  * 
- * Se utiliza 'initializeFirestore' en lugar de 'getFirestore' para poder pasar
- * un objeto de configuración. 
- * 
  * OPCIÓN: experimentalForceLongPolling
  * ------------------------------------
  * Esta opción es CRÍTICA para entornos corporativos. Fuerza a Firebase a usar
@@ -42,6 +39,26 @@ const db = initializeFirestore(app, {
  * y la persistencia de la identidad en el navegador.
  */
 const auth = getAuth(app);
+
+/**
+ * CONFIGURACIÓN DE PERSISTENCIA DE SESIÓN
+ * --------------------------------------
+ * Por defecto, Firebase puede variar su comportamiento según el navegador.
+ * Para evitar que la sesión se cierre al cerrar la pestaña o el navegador,
+ * forzamos la persistencia local.
+ * 
+ * browserLocalPersistence: 
+ * Guarda la sesión en el 'localStorage' del navegador. Esto asegura que el 
+ * token de acceso sobreviva a cierres de pestaña, reinicios del navegador 
+ * e incluso reinicios del sistema operativo.
+ */
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('✅ [Firebase] Persistencia de sesión establecida: Local Storage.');
+  })
+  .catch((error) => {
+    console.error('❌ [Firebase] Error al establecer persistencia de sesión:', error);
+  });
 
 /**
  * EXPORTACIONES
