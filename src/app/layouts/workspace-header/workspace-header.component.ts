@@ -20,7 +20,7 @@ export class WorkspaceHeaderComponent implements OnInit {
   /** Notifica al contenedor cuando se activa el botón de navegación móvil. */
   @Output() navigationToggle = new EventEmitter<void>();
   /** Comparte el rol normalizado del perfil con la navegación lateral. */
-  @Output() accountRoleLoaded = new EventEmitter<'admin' | 'user'>();
+  @Output() accountRoleLoaded = new EventEmitter<'admin' | 'technician' | 'user'>();
 
   /** Identidad que se muestra en el encabezado y en el panel de cuenta. */
   accountName = 'Usuario';
@@ -70,7 +70,10 @@ export class WorkspaceHeaderComponent implements OnInit {
         this.accountName = username.trim();
       }
 
-      const role = profile['role'] === 'admin' ? 'admin' : 'user';
+      const storedRole = profile['role'];
+      const role = storedRole === 'admin' || storedRole === 'technician'
+        ? storedRole
+        : 'user';
       this.accountRole = this.getRoleLabel(role);
       this.accountRoleLoaded.emit(role);
     } catch (error) {
@@ -80,7 +83,11 @@ export class WorkspaceHeaderComponent implements OnInit {
 
   /** Convierte los identificadores de rol a las etiquetas de la interfaz. */
   private getRoleLabel(role: unknown): string {
-    return role === 'admin' ? 'Administrador' : 'Usuario';
+    if (role === 'admin') {
+      return 'Administrador';
+    }
+
+    return role === 'technician' ? 'Técnico' : 'Usuario';
   }
 
   /** Genera las iniciales del avatar usando las dos primeras palabras del nombre. */

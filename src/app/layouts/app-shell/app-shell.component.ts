@@ -19,7 +19,7 @@ export class AppShellComponent {
   /** Controla la navegación lateral en pantallas pequeñas. */
   isMobileNavigationOpen = false;
   /** Rol del usuario autenticado, compartido con la navegación lateral. */
-  userRole: 'admin' | 'user' = 'user';
+  userRole: 'admin' | 'technician' | 'user' = 'user';
 
   /** Cierra la navegación móvil tras seleccionar una ruta o el fondo oscuro. */
   closeMobileNavigation(): void {
@@ -32,7 +32,7 @@ export class AppShellComponent {
   }
 
   /** Actualiza el rol recibido desde la carga del perfil en la barra superior. */
-  updateUserRole(role: 'admin' | 'user'): void {
+  updateUserRole(role: 'admin' | 'technician' | 'user'): void {
     this.userRole = role;
   }
 }

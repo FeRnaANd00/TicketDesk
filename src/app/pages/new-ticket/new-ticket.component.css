@@ -1,0 +1,95 @@
+/* Define colores, ancho y espacios generales del formulario. */
+.ticket-page { --ink:#121c2a; --muted:#584237; --red:#a20d19; --wash:#eff4ff; --line:#d9e3f6; width:min(100%,90rem); margin:auto; padding:clamp(1rem,3vw,2.5rem); color:var(--ink); }
+.ticket-page-heading { margin-bottom:1.5rem; }
+.ticket-eyebrow { margin:0 0 .35rem; color:var(--red); font-size:.72rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+.ticket-page-heading h1 { margin:0; font-size:clamp(1.7rem,4vw,2.25rem); letter-spacing:-.04em; }
+.ticket-page-heading>p:last-child { margin:.5rem 0 0; color:var(--muted); line-height:1.6; }
+
+/* Alinea formulario y consejos, y crea superficies de tarjeta compartidas. */
+.ticket-layout { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(17rem,.9fr); align-items:start; gap:1.5rem; }
+.ticket-form-card,.ticket-tips-card { background:#fff; border:1px solid rgba(18,28,42,.07); border-radius:1.25rem; box-shadow:0 10px 30px rgba(18,28,42,.05); }
+.ticket-form-card { display:flex; flex-direction:column; gap:1.25rem; padding:clamp(1rem,2.6vw,1.75rem); }
+
+/* Unifica controles, etiquetas, foco y notas de validación. */
+.form-field { display:flex; min-width:0; flex-direction:column; gap:.5rem; }
+.form-field>label,.priority-field legend { padding:0; color:#27313f; font-size:.88rem; font-weight:700; }
+.form-field>label>span:first-child,.priority-field legend>span { color:#bb0112; }
+.form-field input:not([type=file]),.form-field textarea,.form-field select { width:100%; min-width:0; padding:.75rem .85rem; color:var(--ink); background:var(--wash); border:1px solid transparent; border-radius:.7rem; outline:none; font:inherit; font-size:.9rem; }
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus { background:#fff; border-color:rgba(162,13,25,.4); box-shadow:0 0 0 3px rgba(162,13,25,.1); }
+.form-field textarea { min-height:10rem; resize:vertical; line-height:1.6; }
+.field-meta { display:flex; justify-content:space-between; color:#6b7280; font-size:.75rem; }
+.field-note,.optional-label { color:#758093; font-size:.76rem; }
+.field-note { margin:0; line-height:1.45; }
+.field-note-error { color:var(--red); }
+
+/* Da estilo a los desplegables y al grupo interactivo de prioridades. */
+.form-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(18rem,1fr); gap:1.1rem; }
+.select-wrap { position:relative; }
+.select-wrap select { appearance:none; padding-right:2.5rem; cursor:pointer; }
+.select-wrap>.material-symbols-outlined { position:absolute; top:50%; right:.8rem; color:var(--muted); pointer-events:none; transform:translateY(-50%); }
+.priority-field { min-width:0; margin:0; padding:0; border:0; }
+.priority-options { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.3rem; padding:.3rem; background:var(--wash); border-radius:.75rem; }
+.priority-option { display:flex; min-width:0; min-height:3.2rem; flex-direction:column; align-items:center; justify-content:center; gap:.15rem; padding:.3rem .1rem; color:var(--muted); background:transparent; border:1px solid transparent; border-radius:.55rem; cursor:pointer; font:inherit; font-size:.72rem; }
+.priority-option-active { color:var(--ink); background:#fff; border-color:var(--line); box-shadow:0 2px 6px rgba(18,28,42,.08); font-weight:700; }
+.priority-option-urgent.priority-option-active { color:#bb0112; background:#ffefed; border-color:#f3b4b1; }
+.priority-option .material-symbols-outlined { font-size:1.15rem; }
+
+/* Presenta zona de carga, selección de archivos y captura móvil. */
+.attachment-heading { display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; }
+.attachment-heading>label { margin:0; }
+.attachment-limit,.attachment-types { color:#758093; font-size:.72rem; }
+.attachment-dropzone { display:flex; min-height:11rem; flex-direction:column; align-items:center; justify-content:center; gap:.65rem; padding:1.1rem; background:rgba(239,244,255,.7); border:1px dashed #b6c4dc; border-radius:.9rem; text-align:center; }
+.attachment-dropzone-active { background:#fff5f1; border-color:var(--red); }
+.upload-icon,.tips-icon { display:grid; flex:0 0 auto; place-items:center; color:var(--red); background:#ffefed; border-radius:.7rem; }
+.upload-icon { width:2.7rem; height:2.7rem; border-radius:50%; font-size:1.4rem; }
+.attachment-dropzone>p { margin:0; color:#27313f; font-size:.86rem; font-weight:600; }
+.upload-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem; }
+.upload-button { display:inline-flex; min-height:2.4rem; align-items:center; justify-content:center; gap:.4rem; padding:.5rem .75rem; color:#fff; background:var(--red); border-radius:.65rem; cursor:pointer; font-size:.78rem; font-weight:700; }
+.upload-button-secondary { color:#27313f; background:#fff; border:1px solid var(--line); }
+.upload-button input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); clip-path:inset(50%); }
+.upload-button .material-symbols-outlined { font-size:1.1rem; }
+
+/* Muestra miniaturas, nombres, tamaños y controles para quitar adjuntos. */
+.attachment-list { display:flex; flex-direction:column; gap:.4rem; }
+.attachment-item { display:flex; min-width:0; align-items:center; gap:.5rem; padding:.4rem .55rem; background:#f8f9ff; border:1px solid #e6eeff; border-radius:.65rem; }
+.attachment-item>img { width:2.2rem; height:2.2rem; object-fit:cover; border-radius:.4rem; }
+.attachment-item>.material-symbols-outlined { color:var(--red); font-size:1.3rem; }
+.attachment-name { min-width:0; flex:1; overflow:hidden; color:#27313f; font-size:.78rem; text-overflow:ellipsis; white-space:nowrap; }
+.attachment-file-size,.attachment-total { color:#758093; font-size:.7rem; }
+.remove-attachment { display:grid; width:1.8rem; height:1.8rem; flex:0 0 auto; place-items:center; color:var(--muted); background:transparent; border:0; border-radius:50%; cursor:pointer; }
+.attachment-total { margin:0; text-align:right; }
+
+/* Estiliza acciones, confirmación y errores de envío. */
+.form-actions { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding-top:.3rem; border-top:1px solid #e6eeff; }
+.cancel-button,.submit-button { display:inline-flex; min-height:2.7rem; align-items:center; justify-content:center; gap:.5rem; padding:.6rem 1rem; border:0; border-radius:.7rem; cursor:pointer; font:inherit; font-size:.86rem; font-weight:700; }
+.cancel-button { color:#27313f; background:var(--wash); }
+.submit-button { color:#fff; background:var(--red); }
+.cancel-button:disabled,.submit-button:disabled { cursor:wait; opacity:.6; }
+.ticket-success,.ticket-error { display:flex; align-items:flex-start; gap:.7rem; margin-bottom:1rem; padding:.85rem 1rem; border-radius:.8rem; }
+.ticket-success { color:#176444; background:#e8f7ef; }
+.ticket-error { color:#9c1b22; background:#fff0ef; font-size:.82rem; line-height:1.45; }
+.ticket-success>.material-symbols-outlined,.ticket-error>.material-symbols-outlined { flex:0 0 auto; font-size:1.2rem; }
+.ticket-success p { margin:.25rem 0 0; font-size:.82rem; }
+.ticket-success code { overflow-wrap:anywhere; font-size:.78rem; }
+
+/* Conserva los consejos y omite paneles de estado y asistencia telefónica. */
+.ticket-tips-card { position:relative; overflow:hidden; padding:1.3rem; }
+.ticket-tips-card:before { position:absolute; top:0; right:0; left:0; height:.3rem; background:var(--red); content:''; }
+.tips-heading { display:flex; align-items:flex-start; gap:.7rem; margin:.25rem 0 1.2rem; }
+.tips-icon { width:2.3rem; height:2.3rem; }
+.tips-heading h2 { margin:0; font-size:1rem; line-height:1.4; }
+.tips-heading p { margin:.25rem 0 0; color:#758093; font-size:.75rem; line-height:1.45; }
+.ticket-tips-card ol { display:flex; flex-direction:column; gap:.9rem; margin:0; padding:0; list-style:none; }
+.ticket-tips-card li { display:flex; align-items:flex-start; gap:.6rem; }
+.ticket-tips-card li>span { display:grid; width:1.3rem; height:1.3rem; flex:0 0 auto; place-items:center; color:var(--red); background:var(--wash); border-radius:50%; font-size:.7rem; font-weight:800; }
+.ticket-tips-card li p { margin:0; color:var(--muted); font-size:.78rem; line-height:1.5; }
+
+/* Apila el panel de consejos y los campos en tabletas y teléfonos. */
+@media (max-width:900px) { .ticket-layout { grid-template-columns:minmax(0,1fr); } .ticket-tips-card { order:2; } }
+@media (max-width:620px) {
+  .ticket-page { padding:1rem; }
+  .form-grid { grid-template-columns:minmax(0,1fr); }
+  .attachment-heading { align-items:flex-start; flex-direction:column; gap:.3rem; }
+  .form-actions { flex-direction:column-reverse; align-items:stretch; }
+  .cancel-button,.submit-button { width:100%; }
+}

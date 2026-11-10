@@ -26,7 +26,10 @@ export const roleGuard: CanActivateFn = async (route) => {
       return router.createUrlTree(['/complete-profile']);
     }
 
-    const role = userDoc.data()['role'] === 'admin' ? 'admin' : 'user';
+    const storedRole = userDoc.data()['role'];
+    const role = storedRole === 'admin' || storedRole === 'technician'
+      ? storedRole
+      : 'user';
     const configuredRoles = route.data?.['roles'];
     const requiredRoles = Array.isArray(configuredRoles)
       ? configuredRoles.filter((value): value is string => typeof value === 'string')
@@ -38,8 +41,8 @@ export const roleGuard: CanActivateFn = async (route) => {
       return true;
     }
 
-    // Usuarios normales regresan a sus tickets; administradores al Dashboard.
-    return router.createUrlTree([role === 'admin' ? '/dashboard' : '/tickets']);
+    // Los usuarios regresan a sus tickets; administradores y técnicos al Dashboard.
+    return router.createUrlTree([role === 'user' ? '/tickets' : '/dashboard']);
   } catch (error) {
     console.error('Error verificando el rol del usuario:', error);
     return router.createUrlTree(['/login']);

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 import { environment } from '../../environments/environment';
 
 /**
@@ -41,6 +42,12 @@ const db = initializeFirestore(app, {
 const auth = getAuth(app);
 
 /**
+ * Inicializa Firebase Storage para conservar archivos adjuntos fuera de
+ * Firestore y almacenar en los tickets solamente sus metadatos y rutas.
+ */
+const storage = getStorage(app);
+
+/**
  * Configura Firebase Auth para conservar la sesión en este navegador hasta que
  * el usuario cierre sesión o borre los datos del navegador.
  */
@@ -59,4 +66,4 @@ export async function setAuthPersistence() {
  * Se exportan las instancias ya configuradas para garantizar que toda la App
  * utilice la misma conexión (Singleton), optimizando el uso de memoria y red.
  */
-export { app, db, auth };
+export { app, db, auth, storage };

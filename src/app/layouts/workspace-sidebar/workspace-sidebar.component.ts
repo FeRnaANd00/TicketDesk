@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 /** Roles existentes y válidos para la navegación de TicketDesk. */
-type UserRole = 'admin' | 'user';
+type UserRole = 'admin' | 'technician' | 'user';
 
 /**
  * Renderiza la navegación lateral común y emite cuando se selecciona una ruta
@@ -38,10 +38,10 @@ export class WorkspaceSidebarComponent {
     exact: boolean;
     roles: UserRole[];
   }> = [
-    { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard', exact: true, roles: ['admin'] },
-    { label: 'Tickets', icon: 'confirmation_number', route: '/tickets', exact: false, roles: ['admin', 'user'] },
-    { label: 'Perfil', icon: 'person', route: '/profile', exact: false, roles: ['admin', 'user'] },
-    { label: 'Nuevo Ticket', icon: 'add_circle', route: '/new-ticket', exact: false, roles: ['admin', 'user'] },
+    { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard', exact: true, roles: ['admin', 'technician'] },
+    { label: 'Tickets', icon: 'confirmation_number', route: '/tickets', exact: false, roles: ['admin', 'technician', 'user'] },
+    { label: 'Perfil', icon: 'person', route: '/profile', exact: false, roles: ['admin', 'technician', 'user'] },
+    { label: 'Nuevo Ticket', icon: 'add_circle', route: '/new-ticket', exact: false, roles: ['admin', 'technician', 'user'] },
     { label: 'Usuarios', icon: 'group', route: '/users', exact: false, roles: ['admin'] }
   ];
 

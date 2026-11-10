@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocument(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return signedIn() && userDocument(request.auth.uid).data.role == 'admin';
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'username', 'department', 'phone', 'role',
+          'profileCompleted', 'createdAt'
+        ]);
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['username', 'department', 'phone', 'profileCompleted']);
+      allow delete: if false;
+    }
+
+    match /technicianDirectory/{uid} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    match /tickets/{ticketId} {
+      function isRequester() {
+        return signedIn() && resource.data.clienteId == request.auth.uid;
+      }
+
+      function isAssignedTechnician() {
+        return signedIn() && resource.data.tecnicoAsignadoId == request.auth.uid;
+      }
+
+      allow get, list: if signedIn()
+        && (isAdmin() || isRequester() || isAssignedTechnician());
+      allow create: if signedIn()
+        && request.resource.data.clienteId == request.auth.uid
+        && request.resource.data.estado == 'abierto'
+        && request.resource.data.prioridad in ['baja', 'media', 'alta', 'urgente']
+        && request.resource.data.categoria in [
+          'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
+        ]
+        && request.resource.data.keys().hasOnly([
+          'titulo', 'categoria', 'descripcion', 'estado', 'prioridad',
+          'fechaCreacion', 'clienteId', 'clienteNombre',
+          'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'adjuntos'
+        ]);
+      allow update: if signedIn() && (
+        isAdmin() || isAssignedTechnician()
+        || (isRequester()
+          && resource.data.adjuntos.size() == 0
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adjuntos']))
+      );
+      allow delete: if isAdmin();
+    }
+  }
+}

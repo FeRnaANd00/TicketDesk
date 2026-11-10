@@ -34,3 +34,100 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #a0010e;
 }
+
+/* Mantiene los campos del diálogo CRUD consistentes con los controles del directorio. */
+.users-page .user-edit-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+  margin-top: 1rem;
+}
+
+.users-page .user-edit-form label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .35rem;
+  color: #536073;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.users-page .user-edit-form input,
+.users-page .user-edit-form select {
+  width: 100%;
+  min-width: 0;
+  padding: .65rem .7rem;
+  color: #27313f;
+  background: #f7f8fb;
+  border: 1px solid #e6eaf1;
+  border-radius: .55rem;
+  outline: 0;
+  font: inherit;
+  font-size: .8rem;
+}
+
+.users-page .user-edit-form input:focus,
+.users-page .user-edit-form select:focus {
+  border-color: #a20d19;
+  box-shadow: 0 0 0 2px rgba(162, 13, 25, .1);
+}
+
+.users-page .user-edit-form input:disabled {
+  color: #788394;
+  background: #eef0f4;
+}
+
+.users-page .user-edit-form small {
+  color: #7b8594;
+  font-size: .68rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* Distingue errores administrativos dentro de las ventanas CRUD. */
+.users-page .dialog-error {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-top: .9rem;
+  padding: .7rem;
+  color: #9c1b22;
+  background: #fff0ef;
+  border-radius: .55rem;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.users-page .dialog-error .material-symbols-outlined {
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
+/* Mantiene la confirmación y los botones de edición separados. */
+.users-page .details-dialog-footer {
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.users-page .details-dialog-footer button:disabled,
+.users-page .details-dialog-header button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.users-page .details-dialog-footer .dialog-secondary-action {
+  color: #536073;
+  background: #f0f2f6;
+}
+
+.users-page .details-dialog-footer .dialog-danger-action {
+  color: #a20d19;
+  background: #fff0ef;
+}
+
+@media (max-width: 520px) {
+  .users-page .user-edit-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

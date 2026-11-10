@@ -3,7 +3,6 @@ import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { CompleteProfileComponent } from './pages/complete-profile/complete-profile.component';
-import { AdminComponent } from './pages/admin/admin.component';
 import { AppShellComponent } from './layouts/app-shell/app-shell.component';
 import { SectionPlaceholderComponent } from './pages/section-placeholder/section-placeholder.component';
 import { authGuard } from './auth.guard';
@@ -48,11 +47,11 @@ export const routes: Routes = [
     canActivate: [authGuard, profileGuard],
     children: [
       {
-        // El Dashboard está reservado para cuentas administradoras.
+        // El Dashboard está disponible para administradores y técnicos.
         path: 'dashboard',
         component: DashboardComponent,
         canActivate: [roleGuard],
-        data: { roles: ['admin'] },
+        data: { roles: ['admin', 'technician'] },
         title: 'TicketDesk - Dashboard'
       },
       {
@@ -76,19 +75,17 @@ export const routes: Routes = [
         title: 'TicketDesk - Perfil'
       },
       {
-        // Destino temporal del menú hasta implementar la creación de tickets.
+        // Formulario para registrar una incidencia y sus archivos opcionales.
         path: 'new-ticket',
-        component: SectionPlaceholderComponent,
-        data: {
-          title: 'Nuevo Ticket',
-          description: 'El formulario para registrar incidencias se implementará a continuación.'
-        },
+        loadComponent: () => import('./pages/new-ticket/new-ticket.component')
+          .then((module) => module.NewTicketComponent),
         title: 'TicketDesk - Nuevo Ticket'
       },
       {
         // La gestión de Usuarios solo está disponible para administradores.
         path: 'users',
-        component: AdminComponent,
+        loadComponent: () => import('./pages/admin/admin.component')
+          .then((module) => module.AdminComponent),
         canActivate: [roleGuard],
         data: { roles: ['admin'] },
         title: 'TicketDesk - Usuarios'

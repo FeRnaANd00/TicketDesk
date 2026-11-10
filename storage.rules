@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocument(uid) {
+      return firestore.get(/databases/(default)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return signedIn() && userDocument(request.auth.uid).data.role == 'admin';
+    }
+
+    function canReadTicket(ticketId) {
+      let ticket = firestore.get(/databases/(default)/documents/tickets/$(ticketId));
+      return signedIn() && (
+        ticket.data.clienteId == request.auth.uid
+        || ticket.data.tecnicoAsignadoId == request.auth.uid
+        || isAdmin()
+      );
+    }
+
+    match /tickets/{ownerUid}/{ticketId}/{fileName} {
+      allow create: if signedIn()
+        && request.auth.uid == ownerUid
+        && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'application/pdf|image/(png|jpeg|heic|heif)|text/plain|application/octet-stream'
+        )
+        && firestore.get(/databases/(default)/documents/tickets/$(ticketId))
+          .data.clienteId == request.auth.uid;
+      allow read: if canReadTicket(ticketId);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

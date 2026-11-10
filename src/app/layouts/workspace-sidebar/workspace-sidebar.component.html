@@ -10,7 +10,11 @@
 <!-- Navegación común sin subtítulo de Panel Técnico ni estado de mesa. -->
 <aside class="workspace-sidebar" [class.workspace-sidebar-open]="isOpen">
   <!-- Marca TicketDesk con el icono del sistema de tickets. -->
-  <a class="brand" routerLink="/dashboard" (click)="navigationSelected.emit()">
+  <a
+    class="brand"
+    [routerLink]="userRole === 'user' ? '/tickets' : '/dashboard'"
+    (click)="navigationSelected.emit()"
+  >
     <span class="brand-icon material-symbols-outlined" aria-hidden="true">confirmation_number</span>
     <span class="brand-name">TicketDesk</span>
   </a>

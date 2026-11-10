@@ -1,98 +1,348 @@
-<!-- 
-  CONTENEDOR PRINCIPAL DE ADMINISTRACIÓN
-  - bg-[#f8f9ff]: Fondo suave consistente con el resto de la aplicación.
-  - p-4 md:p-8: Espaciado responsivo.
--->
-<main class="min-h-screen w-full p-4 md:p-8 bg-[#f8f9ff]">
-  
-  <!-- CABECERA DE LA SECCIÓN
-       - flex justify-between: Separa el título del botón de acción.
-       - mb-8: Espacio inferior para separar el título de la tabla.
-  -->
-  <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+<!-- Contiene el encabezado, las métricas y el directorio real de cuentas. -->
+<main class="users-page">
+  <!-- Presenta el título y el texto de acceso solicitado para la sección. -->
+  <header class="users-heading">
     <div>
-      <h1 class="text-3xl font-bold text-[#121c2a]">Gestión de Usuarios</h1>
-      <p class="text-[#584237]">Administra los roles y permisos de los agentes de TicketDesk.</p>
+      <p class="users-eyebrow">Control de Acceso</p>
+      <h1># Usuarios y técnicos</h1>
+      <p>Gestiona las cuentas de acceso corporativas y asigna los roles de permisos del equipo.</p>
     </div>
-    
-    <!-- Botón para refrescar la lista de usuarios -->
-    <button (click)="loadUsers()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all shadow-sm">
-      <span class="material-symbols-outlined text-lg">refresh</span>
-      Actualizar Lista
+    <!-- Abre la ventana para crear una cuenta autenticable en Firebase. -->
+    <button class="add-user-button" type="button" (click)="openCreateDialog()">
+      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+      Agregar usuario
     </button>
-  </div>
+  </header>
 
-  <!-- TARJETA DE LA TABLA
-       - bg-white rounded-3xl shadow-xl: Estética moderna y limpia.
-       - overflow-hidden: Asegura que los bordes redondeados se apliquen a la tabla interna.
-  -->
-  <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-    
-    <!-- ESTADO DE CARGA
-         - Centrado y visible mientras isLoading es true.
-    -->
-    <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-20 space-y-4">
-      <div class="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
-      <p class="text-gray-500 font-medium">Cargando usuarios...</p>
+  <!-- Muestra métricas calculadas con los documentos existentes en Firestore. -->
+  <section class="users-stats" aria-label="Resumen de miembros">
+    <article class="stat-card">
+      <span class="stat-icon material-symbols-outlined" aria-hidden="true">groups</span>
+      <div>
+        <p>Total miembros</p>
+        <strong>{{ users.length }}</strong>
+        <span>Cuentas registradas</span>
+      </div>
+    </article>
+    <article class="stat-card">
+      <span class="stat-icon technician-stat-icon material-symbols-outlined" aria-hidden="true">support_agent</span>
+      <div>
+        <p>Técnicos</p>
+        <strong>{{ technicianCount }}</strong>
+        <span>Técnicos registrados</span>
+      </div>
+    </article>
+  </section>
+
+  <!-- Agrupa filtros, resultados y paginación del directorio. -->
+  <section class="directory-card" aria-label="Directorio de usuarios">
+    <!-- Permite filtrar perfiles por rol sin inventar estados de cuenta. -->
+    <div class="role-tabs" role="tablist" aria-label="Filtrar por tipo de cuenta">
+      <button
+        *ngFor="let filter of roleFilters"
+        class="role-tab"
+        [class.role-tab-active]="activeFilter === filter.key"
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeFilter === filter.key"
+        (click)="selectFilter(filter.key)"
+      >
+        <span>{{ filter.label }}</span>
+        <span class="tab-count">{{ countFor(filter.key) }}</span>
+      </button>
     </div>
 
-    <!-- TABLA DE USUARIOS
-         - hidden: Se oculta mientras se están cargando los datos.
-    -->
-    <div *ngIf="!isLoading" class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <!-- Cabecera de la Tabla -->
-        <thead class="bg-gray-50 border-b border-gray-200">
+    <!-- Ofrece búsqueda por nombre, correo o área y filtro por departamento. -->
+    <div class="directory-filters">
+      <label class="search-control">
+        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+        <input
+          type="search"
+          name="userSearch"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="resetPagination()"
+          placeholder="Buscar por nombre, correo o área..."
+          aria-label="Buscar por nombre, correo o área"
+        />
+      </label>
+      <label class="department-control">
+        <span class="visually-hidden">Filtrar por departamento</span>
+        <select
+          name="departmentFilter"
+          [(ngModel)]="selectedDepartment"
+          (ngModelChange)="resetPagination()"
+        >
+          <option value="">Todos los departamentos</option>
+          <option *ngFor="let department of departments" [value]="department">
+            {{ department }}
+          </option>
+        </select>
+        <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
+      </label>
+      <button class="refresh-button" type="button" (click)="loadUsers()" [disabled]="isLoading">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- Informa errores de lectura de Firebase sin ocultar el problema. -->
+    <div *ngIf="loadError" class="directory-error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ loadError }}</span>
+      <button type="button" (click)="loadUsers()">Reintentar</button>
+    </div>
+
+    <!-- Indica que Firestore está cargando los perfiles y conteos actuales. -->
+    <div *ngIf="isLoading" class="directory-loading" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      Cargando miembros...
+    </div>
+
+    <!-- Lista solamente propiedades que existen en los perfiles de Firebase. -->
+    <div *ngIf="!isLoading && !loadError" class="table-scroll">
+      <table class="users-table">
+        <thead>
           <tr>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Usuario</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Departamento</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider">Rol Actual</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-600 uppercase tracking-wider text-right">Acciones</th>
+            <th scope="col">Usuario / miembro</th>
+            <th scope="col">Correo corporativo</th>
+            <th scope="col">Departamento</th>
+            <th scope="col">Rol asignado</th>
+            <th scope="col" class="details-heading">Acciones</th>
           </tr>
         </thead>
-        
-        <!-- Cuerpo de la Tabla -->
-        <tbody class="divide-y divide-gray-100">
-          <tr *ngFor="let user of users" class="hover:bg-gray-50 transition-colors">
-            <!-- Columna Nombre -->
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">
-                  {{ user.username.substring(0,2).toUpperCase() }}
-                </div>
-                <span class="font-medium text-gray-800">{{ user.username }}</span>
+        <tbody>
+          <tr *ngFor="let user of paginatedUsers">
+            <td>
+              <div class="member-cell">
+                <span class="member-avatar" aria-hidden="true">{{ initials(user.username) || 'U' }}</span>
+                <span class="member-name">{{ user.username }}</span>
               </div>
             </td>
-            <!-- Columna Email -->
-            <td class="px-6 py-4 text-sm text-gray-600">{{ user.email }}</td>
-            <!-- Columna Departamento -->
-            <td class="px-6 py-4 text-sm text-gray-600">{{ user.department }}</td>
-            <!-- Columna Rol con Badge de Color -->
-            <td class="px-6 py-4">
-              <span [ngClass]="{
-                'bg-red-100 text-red-700': user.role === 'admin',
-                'bg-blue-100 text-blue-700': user.role === 'user'
-              }" class="px-2 py-1 rounded-full text-xs font-bold uppercase">
-                {{ user.role }}
+            <td class="email-cell">{{ user.email || 'Sin correo' }}</td>
+            <td>{{ user.department }}</td>
+            <td>
+              <span class="role-badge" [ngClass]="'role-badge-' + user.role">
+                <span class="role-dot" aria-hidden="true"></span>
+                {{ roleLabel(user.role) }}
               </span>
             </td>
-            <!-- Columna Acciones: Botón para cambiar el rol -->
-            <td class="px-6 py-4 text-right">
-              <button (click)="toggleRole(user)" class="px-3 py-1.5 text-xs font-semibold text-white bg-gray-800 rounded-lg hover:bg-black transition-all active:scale-95">
-                Cambiar a {{ user.role === 'admin' ? 'Usuario' : 'Admin' }}
+            <td class="details-cell">
+              <button
+                class="details-button"
+                type="button"
+                [attr.aria-label]="'Ver detalles de ' + user.username"
+                title="Ver detalles"
+                (click)="showDetails(user)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
               </button>
             </td>
           </tr>
-          
-          <!-- Mensaje si no hay usuarios -->
-          <tr *ngIf="users.length === 0">
-            <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
-              No se encontraron usuarios registrados en el sistema.
+          <tr *ngIf="paginatedUsers.length === 0">
+            <td colspan="5" class="empty-state">
+              No hay miembros que coincidan con los filtros seleccionados.
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Permite elegir cuántos miembros se muestran y navegar entre páginas. -->
+    <footer *ngIf="!isLoading && !loadError" class="table-pagination">
+      <div class="page-size-control">
+        <label for="page-size">Miembros por página</label>
+        <select
+          id="page-size"
+          [ngModel]="pageSize"
+          (ngModelChange)="changePageSize($event)"
+        >
+          <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+        </select>
+      </div>
+      <span class="pagination-summary">
+        {{ rangeStart }}–{{ rangeEnd }} de {{ filteredUsers.length }} miembros
+      </span>
+      <div class="pagination-buttons">
+        <button
+          type="button"
+          aria-label="Página anterior"
+          [disabled]="currentPage <= 1"
+          (click)="previousPage()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+        </button>
+        <span>Página {{ currentPage }} de {{ totalPages }}</span>
+        <button
+          type="button"
+          aria-label="Página siguiente"
+          [disabled]="currentPage >= totalPages"
+          (click)="nextPage()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- Comparte el diálogo para alta, consulta, edición y baja de cuentas. -->
+  <div
+    *ngIf="dialogMode === 'create' || selectedUser"
+    class="details-backdrop"
+    (click)="!isSavingUser && closeDetails()"
+  >
+    <section
+      class="details-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="details-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="details-dialog-header">
+        <div>
+          <p>Control de Acceso</p>
+          <h2 id="details-title">
+            {{ dialogMode === 'create' ? 'Agregar usuario' : dialogMode === 'edit' ? 'Editar usuario' : 'Detalles del miembro' }}
+          </h2>
+        </div>
+        <button type="button" aria-label="Cerrar detalles" [disabled]="isSavingUser" (click)="closeDetails()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+
+      <!-- Muestra los datos actuales cuando el administrador solo consulta. -->
+      <ng-container *ngIf="dialogMode === 'details' && selectedUser as user">
+        <div class="details-identity">
+          <span class="member-avatar details-avatar" aria-hidden="true">{{ initials(user.username) || 'U' }}</span>
+          <div>
+            <strong>{{ user.username }}</strong>
+            <span class="role-badge" [ngClass]="'role-badge-' + user.role">{{ roleLabel(user.role) }}</span>
+          </div>
+        </div>
+        <dl class="details-fields">
+          <div><dt>Correo corporativo</dt><dd>{{ user.email || 'No registrado' }}</dd></div>
+          <div><dt>Departamento</dt><dd>{{ user.department }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ user.phone || 'No registrado' }}</dd></div>
+          <div><dt>Identificador</dt><dd>{{ user.uid }}</dd></div>
+        </dl>
+      </ng-container>
+
+      <!-- Recopila los datos para crear una cuenta o actualizar un perfil existente. -->
+      <form
+        *ngIf="dialogMode === 'create' || dialogMode === 'edit'"
+        id="user-account-form"
+        class="user-edit-form"
+        (ngSubmit)="saveUser()"
+      >
+        <label *ngIf="dialogMode === 'create'" for="new-user-email">
+          Correo corporativo
+          <input
+            id="new-user-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            [(ngModel)]="userForm.email"
+            required
+            email
+          />
+        </label>
+        <label *ngIf="dialogMode === 'create'" for="new-user-password">
+          Contraseña temporal
+          <input
+            id="new-user-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            [(ngModel)]="userForm.password"
+            required
+          />
+          <small>Entrega la contraseña al usuario por un canal seguro.</small>
+        </label>
+        <label *ngIf="dialogMode === 'edit'" for="edit-user-email">
+          Correo corporativo
+          <input id="edit-user-email" name="emailReadonly" type="email" [value]="userForm.email" disabled />
+          <small>El correo de inicio de sesión no se modifica desde esta pantalla.</small>
+        </label>
+        <label for="user-username">
+          Nombre
+          <input
+            id="user-username"
+            name="username"
+            type="text"
+            maxlength="100"
+            autocomplete="name"
+            [(ngModel)]="userForm.username"
+            required
+          />
+        </label>
+        <label for="user-department">
+          Departamento
+          <input
+            id="user-department"
+            name="department"
+            type="text"
+            maxlength="100"
+            [(ngModel)]="userForm.department"
+            required
+          />
+        </label>
+        <label for="user-phone">
+          Teléfono
+          <input
+            id="user-phone"
+            name="phone"
+            type="tel"
+            maxlength="40"
+            autocomplete="tel"
+            [(ngModel)]="userForm.phone"
+            required
+          />
+        </label>
+        <label for="user-role">
+          Rol
+          <select id="user-role" name="role" [(ngModel)]="userForm.role" required>
+            <option value="user">Usuario</option>
+            <option value="technician">Técnico</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </label>
+      </form>
+
+      <!-- Informa fallos de validación o de Firebase dentro del mismo diálogo. -->
+      <div *ngIf="dialogError" class="dialog-error" role="alert">
+        <span class="material-symbols-outlined" aria-hidden="true">error</span>
+        {{ dialogError }}
+      </div>
+
+      <!-- Muestra acciones de consulta, edición, eliminación o guardado. -->
+      <footer class="details-dialog-footer">
+        <ng-container *ngIf="dialogMode === 'details'; else editDialogActions">
+          <button type="button" class="dialog-secondary-action" [disabled]="isSavingUser" (click)="closeDetails()">
+            Cerrar
+          </button>
+          <button type="button" class="dialog-danger-action" [disabled]="isSavingUser" (click)="deleteSelectedUser()">
+            Eliminar
+          </button>
+          <button type="button" [disabled]="isSavingUser" (click)="beginEdit()">Editar</button>
+        </ng-container>
+        <ng-template #editDialogActions>
+          <button
+            type="button"
+            class="dialog-secondary-action"
+            [disabled]="isSavingUser"
+            (click)="cancelDialogEdit()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="user-account-form"
+            [disabled]="isSavingUser"
+          >
+            {{ isSavingUser ? 'Guardando...' : dialogMode === 'create' ? 'Crear cuenta' : 'Guardar cambios' }}
+          </button>
+        </ng-template>
+      </footer>
+    </section>
   </div>
 </main>
