@@ -41,24 +41,18 @@ const db = initializeFirestore(app, {
 const auth = getAuth(app);
 
 /**
- * CONFIGURACIÓN DE PERSISTENCIA DE SESIÓN
- * --------------------------------------
- * Por defecto, Firebase puede variar su comportamiento según el navegador.
- * Para evitar que la sesión se cierre al cerrar la pestaña o el navegador,
- * forzamos la persistencia local.
- * 
- * browserLocalPersistence: 
- * Guarda la sesión en el 'localStorage' del navegador. Esto asegura que el 
- * token de acceso sobreviva a cierres de pestaña, reinicios del navegador 
- * e incluso reinicios del sistema operativo.
+ * Configura Firebase Auth para conservar la sesión en este navegador hasta que
+ * el usuario cierre sesión o borre los datos del navegador.
  */
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log('✅ [Firebase] Persistencia de sesión establecida: Local Storage.');
-  })
-  .catch((error) => {
+export async function setAuthPersistence() {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('✅ [Firebase] Persistencia local de sesión establecida.');
+  } catch (error) {
     console.error('❌ [Firebase] Error al establecer persistencia de sesión:', error);
-  });
+    throw error;
+  }
+}
 
 /**
  * EXPORTACIONES

@@ -1,7 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { auth } from './core/firebase.config';
-import { onAuthStateChanged } from 'firebase/auth';
 
 /**
  * AuthGuard funcional.
@@ -11,16 +10,14 @@ import { onAuthStateChanged } from 'firebase/auth';
 export const authGuard: CanActivateFn = async (route, state) => {
   const router = inject(Router);
 
-  return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // El usuario está autenticado, permitir acceso
-        resolve(true);
-      } else {
-        // El usuario no está autenticado, redirigir al login
-        router.navigate(['/login']);
-        resolve(false);
-      }
-    });
-  });
+  // Espera la restauración inicial de Firebase para no rechazar el retorno de Google.
+  await auth.authStateReady();
+
+  if (auth.currentUser) {
+    // El usuario está autenticado; permitir el acceso a la ruta protegida.
+    return true;
+  }
+
+  // El usuario no está autenticado; devolver una redirección controlada al login.
+  return router.createUrlTree(['/login']);
 };

@@ -41,10 +41,22 @@
         <h1 class="text-3xl font-bold text-[#121c2a]">¡Hola, {{ username }}! 👋</h1>
         <p class="text-[#584237]">Bienvenido a tu centro de gestión de incidencias.</p>
       </div>
-      <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase" 
-           [ngClass]="{'bg-red-100 text-red-700': userRole === 'admin', 'bg-blue-100 text-blue-700': userRole === 'user'}">
-        <span class="material-symbols-outlined text-sm">shield</span>
-        {{ userRole }}
+      <!-- Agrupa el rol y la acción para cerrar de forma explícita la sesión persistente. -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase"
+             [ngClass]="{'bg-red-100 text-red-700': userRole === 'admin', 'bg-blue-100 text-blue-700': userRole === 'user'}">
+          <span class="material-symbols-outlined text-sm">shield</span>
+          {{ userRole }}
+        </div>
+        <button
+          (click)="logout()"
+          [disabled]="isLoggingOut"
+          type="button"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-[#584237] hover:bg-gray-50 disabled:opacity-60"
+        >
+          <span class="material-symbols-outlined text-lg">logout</span>
+          {{ isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+        </button>
       </div>
     </header>
 

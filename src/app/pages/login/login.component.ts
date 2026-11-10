@@ -2,8 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { auth } from '../../core/firebase.config';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, setAuthPersistence } from '../../core/firebase.config';
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
 
 /**
  * Componente de Login.
@@ -26,11 +30,12 @@ export class LoginComponent {
   email = '';
   /** Contraseña ingresada por el usuario. */
   password = '';
-  /** Estado del checkbox 'Recordarme'. */
-  rememberMe = false;
-  /** Indica si cualquier proceso de autenticación está en curso. */
+  /** Indica si el acceso con correo y contraseña está en curso. */
   isLoading = false;
+  /** Indica si el proceso de autenticación con Google está en curso. */
+  isGoogleLoading = false;
 
+  /** Recibe el router para navegar al panel después de autenticar al usuario. */
   constructor(private router: Router) {}
 
   /**
@@ -38,6 +43,8 @@ export class LoginComponent {
    * Valida campos vacíos y gestiona la respuesta de Firebase Auth.
    */
   async onLogin() {
+    if (this.isGoogleLoading) return;
+
     if (!this.email || !this.password) {
       alert('Por favor, ingresa correo y contraseña');
       return;
@@ -45,13 +52,18 @@ export class LoginComponent {
 
     this.isLoading = true;
     try {
-      await signInWithEmailAndPassword(auth, this.email, this.password);
+      await setAuthPersistence();
+      await signInWithEmailAndPassword(auth, this.email.trim(), this.password);
       this.router.navigate(['/dashboard']); 
     } catch (error: any) {
       console.error('Error de login:', error.code);
       switch (error.code) {
         case 'auth/invalid-credential':
           alert('Credenciales incorrectas.'); break;
+        case 'auth/user-not-found':
+          alert('No existe una cuenta con ese correo.'); break;
+        case 'auth/too-many-requests':
+          alert('Demasiados intentos. Intenta más tarde.'); break;
         default:
           alert('Error al iniciar sesión. Verifica tu conexión.');
       }
@@ -61,27 +73,49 @@ export class LoginComponent {
   }
 
   /**
-   * Inicia sesión utilizando el proveedor de Google.
-   * Abre una ventana emergente de Google y, tras la autorización,
-   * redirige al usuario al Dashboard.
+   * Mantiene el popup de Google en PC. En teléfonos también usa popup,
+   * iniciándolo antes de cualquier operación asíncrona para conservar el gesto
+   * del usuario que algunos navegadores móviles exigen para abrirlo.
    */
   async loginWithGoogle() {
-    this.isLoading = true;
+    if (this.isLoading || this.isGoogleLoading) return;
+
+    this.isGoogleLoading = true;
     try {
-      // Configuración del proveedor de Google
       const provider = new GoogleAuthProvider();
-      
-      // Apertura de popup de autenticación de Google
-      await signInWithPopup(auth, provider);
-      
-      // Redirección al dashboard (el profileGuard verificará si debe ir a completar perfil)
-      this.router.navigate(['/dashboard']);
+      if (this.isMobileBrowser()) {
+        await signInWithPopup(auth, provider);
+
+        try {
+          await setAuthPersistence();
+        } catch (persistenceError) {
+          console.error('No se pudo establecer la persistencia local:', persistenceError);
+          alert('Se inició sesión, pero no se pudo mantener la sesión en este navegador.');
+        }
+      } else {
+        await setAuthPersistence();
+        await signInWithPopup(auth, provider);
+      }
+
+      await this.router.navigate(['/dashboard']);
     } catch (error: any) {
       console.error('Error con Google Auth:', error.code);
-      alert('Hubo un problema al iniciar sesión con Google. Inténtalo de nuevo.');
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+        alert('El navegador bloqueó la ventana de Google. Permite ventanas emergentes e inténtalo de nuevo.');
+      } else {
+        alert('Hubo un problema al iniciar sesión con Google. Inténtalo de nuevo.');
+      }
     } finally {
-      this.isLoading = false;
+      this.isGoogleLoading = false;
     }
+  }
+
+  /**
+   * Identifica teléfonos por las marcas habituales de sus user agents para
+   * separar el flujo móvil del popup de escritorio, que permanece sin cambios.
+   */
+  private isMobileBrowser(): boolean {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   }
 
   /** Controla la visibilidad del texto de la contraseña. */

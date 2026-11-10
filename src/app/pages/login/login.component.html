@@ -45,6 +45,7 @@
           <p class="text-[#584237]">Ingresa tus credenciales corporativas para acceder al panel.</p>
         </div>
         <form class="space-y-6" (submit)="onLogin(); $event.preventDefault()">
+          <!-- Este bloque captura el correo que Firebase usará para autenticar por credenciales. -->
           <div class="space-y-2">
             <label class="block text-sm font-semibold text-[#121c2a]">Correo electrónico corporativo</label>
             <div class="relative">
@@ -54,6 +55,7 @@
               <input [(ngModel)]="email" name="email" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-[#bb0112] transition-all" placeholder="ejemplo@empresa.com" required type="email"/>
             </div>
           </div>
+          <!-- Este bloque captura la contraseña y permite alternar su visibilidad. -->
           <div class="space-y-2">
             <label class="block text-sm font-semibold text-[#121c2a]">Contraseña</label>
             <div class="relative">
@@ -66,34 +68,30 @@
               </button>
             </div>
           </div>
-          <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input [(ngModel)]="rememberMe" name="remember" class="w-4 h-4 accent-[#bb0112] cursor-pointer" type="checkbox"/>
-              <span class="text-sm text-[#584237]">Recordarme</span>
-            </label>
-            <div class="flex gap-3">
-              <a class="text-sm font-semibold text-[#bb0112] hover:underline" href="#recuperar">¿Olvidaste tu contraseña?</a>
-              <a class="text-sm font-semibold text-[#bb0112] hover:underline" routerLink="/register">Regístrate</a>
-            </div>
+          <!-- Esta fila conserva los enlaces de recuperación de contraseña y registro. -->
+          <div class="flex justify-end gap-3">
+            <a class="text-sm font-semibold text-[#bb0112] hover:underline" href="#recuperar">¿Olvidaste tu contraseña?</a>
+            <a class="text-sm font-semibold text-[#bb0112] hover:underline" routerLink="/register">Regístrate</a>
           </div>
-          <button [disabled]="isLoading" class="w-full py-3.5 rounded-xl bg-[#bb0112] hover:bg-red-700 text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:bg-red-400" type="submit">
+          <!-- El botón queda bloqueado mientras cualquiera de los dos métodos está ocupado. -->
+          <button [disabled]="isLoading || isGoogleLoading" class="w-full py-3.5 rounded-xl bg-[#bb0112] hover:bg-red-700 text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:bg-red-400" type="submit">
             <span *ngIf="!isLoading">Iniciar sesión</span>
             <span *ngIf="isLoading" class="animate-pulse">Validando...</span>
             <span *ngIf="!isLoading" class="material-symbols-outlined">arrow_forward</span>
           </button>
         </form>
 
-        <!-- SECCIÓN DE AUTENTICACIÓN EXTERNA -->
+        <!-- Separa visualmente el login tradicional del proveedor de identidad externo. -->
         <div class="relative flex items-center py-4">
           <div class="flex-grow border-t border-gray-200"></div>
           <span class="flex-shrink mx-4 text-gray-400 text-sm">o utiliza</span>
           <div class="flex-grow border-t border-gray-200"></div>
         </div>
 
-        <!-- Botón de Google: Diseñado para seguir las guías de marca de Google -->
-        <button (click)="loginWithGoogle()" [disabled]="isLoading" class="w-full py-3 rounded-xl bg-white border border-gray-300 text-gray-700 font-semibold shadow-sm transition-all flex items-center justify-center gap-3 hover:bg-gray-50 active:scale-[0.98] disabled:bg-gray-100">
+        <!-- En todos los dispositivos se abre el popup; en teléfonos se inicia antes de operaciones asíncronas. -->
+        <button (click)="loginWithGoogle()" [disabled]="isLoading || isGoogleLoading" type="button" class="w-full py-3 rounded-xl bg-white border border-gray-300 text-gray-700 font-semibold shadow-sm transition-all flex items-center justify-center gap-3 hover:bg-gray-50 active:scale-[0.98] disabled:bg-gray-100">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" class="w-5 h-5"/>
-          <span>Continuar con Google</span>
+          <span>{{ isGoogleLoading ? 'Conectando con Google...' : 'Continuar con Google' }}</span>
         </button>
 
       </div>

@@ -1,32 +1,24 @@
-/* 
- * Estilos personalizados para el Componente de Login.
- * Nota: La mayor parte del diseño se gestiona mediante clases de Tailwind CSS en el HTML.
- * Este archivo se utiliza para animaciones y ajustes finos.
- */
-
+/* Define el host del componente como un bloque para que ocupe su propio flujo de diseño. */
 :host {
   display: block;
 }
 
-/* --- Animaciones --- */
-
-/* Animación de entrada suave para la tarjeta contenedora */
+/* Aplica una entrada gradual a la tarjeta principal del formulario. */
 .shadow-2xl {
   animation: fadeIn 0.8s ease-out;
 }
 
-/* Animación de "flotación" para la imagen de soporte en el panel izquierdo 
+/* Mantiene la ilustración de soporte en un movimiento vertical suave. 
 .drop-shadow-2xl {
   animation: float 6s ease-in-out infinite;
 }
 
-/* Animación de pulso suave para el botón cuando está en estado de carga */
+/* Marca visualmente los mensajes que indican una operación en curso. */
 .animate-pulse {
   animation: pulseCustom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* --- Keyframes --- */
-
+/* Desplaza la tarjeta desde abajo mientras su opacidad aumenta al entrar. */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -38,6 +30,7 @@
   }
 }
 
+/* Mueve la ilustración hacia arriba y abajo durante cada ciclo de animación. */
 @keyframes float {
   0% {
     transform: translateY(0px);
@@ -50,6 +43,7 @@
   }
 }
 
+/* Reduce y restaura la opacidad para crear el pulso del estado de carga. */
 @keyframes pulseCustom {
   0%, 100% {
     opacity: 1;
@@ -59,9 +53,7 @@
   }
 }
 
-/* --- Ajustes Finos --- */
-
-/* Asegurar que los iconos de Material Symbols estén perfectamente centrados */
+/* Alinea los iconos de Material Symbols con el texto que los acompaña. */
 .material-symbols-outlined {
   vertical-align: middle;
   line-height: 1;
@@ -70,20 +62,22 @@
   justify-content: center;
 }
 
-/* Estilo para mejorar la transición de los inputs al hacer foco */
+/* Suaviza los cambios visuales de los campos al recibir o perder el foco. */
 input {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Efecto de clic en el botón principal */
+/* Reduce ligeramente los botones mientras el usuario mantiene el clic. */
 button:active {
   transform: scale(0.95);
 }
 
-/* Estilo específico para el botón de Google para mejorar el feedback visual */
+/* Suaviza el cambio de fondo y sombra del botón de Google al interactuar. */
 .google-btn {
   transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
 }
+
+/* Añade profundidad al botón de Google cuando el puntero pasa sobre él. */
 .google-btn:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
