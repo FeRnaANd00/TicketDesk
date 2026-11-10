@@ -1,0 +1,162 @@
+/* Posiciona el componente de cabecera sobre el contenido y deja libre la barra lateral. */
+:host {
+  position: fixed;
+  z-index: 40;
+  inset: 0 0 auto var(--sidebar-width, 16rem);
+  display: block;
+  height: var(--header-height, 4.5rem);
+}
+
+/* Alinea búsqueda y controles de cuenta dentro de la superficie superior. */
+.workspace-header {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 0 1.75rem;
+  background: #fffffff0;
+  border-bottom: 1px solid #121c2a10;
+  box-shadow: 0 1px 8px #00000009;
+  backdrop-filter: blur(18px);
+}
+
+/* Agrupa el icono y el campo de búsqueda en un control flexible. */
+.global-search {
+  display: flex;
+  width: min(100%, 32rem);
+  height: 2.65rem;
+  align-items: center;
+  gap: .6rem;
+  padding: 0 .85rem;
+  color: #584237;
+  background: #eff4ff;
+  border: 1px solid transparent;
+  border-radius: .8rem;
+}
+
+/* Señala el foco de teclado o puntero con un borde del color de marca. */
+.global-search:focus-within { background: white; border-color: #bb011259; }
+
+/* Mantiene el icono de búsqueda con un ancho fijo junto al input. */
+.global-search .material-symbols-outlined { flex: 0 0 auto; font-size: 1.25rem; }
+
+/* Permite que el input ocupe el espacio restante sin desbordar la barra. */
+.global-search input { width: 100%; min-width: 0; color: #121c2a; background: transparent; border: 0; outline: 0; font: inherit; font-size: .82rem; }
+
+/* Atenúa el texto de ayuda y conserva su legibilidad. */
+.global-search input::placeholder { color: #7d7880; opacity: 1; }
+
+/* Sirve de ancla para colocar el panel de cuenta respecto del botón. */
+.account-area { position: relative; flex: 0 0 auto; }
+
+/* Reúne nombre, rol, avatar y control de apertura en un botón accesible. */
+.account-trigger { display: flex; align-items: center; gap: .65rem; padding: .35rem .45rem .35rem .8rem; color: #121c2a; background: transparent; border: 1px solid transparent; border-radius: 1rem; cursor: pointer; text-align: right; }
+
+/* Distingue el botón de cuenta cuando recibe hover o permanece abierto. */
+.account-trigger:hover, .account-trigger[aria-expanded='true'] { background: #eff4ff; border-color: #121c2a10; }
+
+/* Apila el nombre y la clasificación del usuario en el encabezado. */
+.account-summary { display: flex; flex-direction: column; line-height: 1.25; }
+
+/* Limita el ancho del nombre y muestra puntos si el texto es demasiado largo. */
+.account-name { max-width: 13rem; overflow: hidden; font-size: .82rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Presenta el rol con jerarquía visual secundaria al nombre. */
+.account-role { color: #584237; font-size: .7rem; font-weight: 600; }
+
+/* Comparte forma y tratamiento de color entre el avatar pequeño y el grande. */
+.account-avatar, .account-card-avatar { display: grid; flex: 0 0 auto; place-items: center; color: white; background: linear-gradient(145deg, #c41d2b, #7d0711); border-radius: 50%; font-weight: 750; }
+
+/* Define las dimensiones compactas del avatar en la cabecera. */
+.account-avatar { width: 2.45rem; height: 2.45rem; font-size: .8rem; }
+
+/* Mantiene el indicador de apertura discreto al lado del avatar. */
+.account-chevron { color: #736d73; font-size: 1.2rem; }
+
+/* Cubre la pantalla para detectar pulsaciones fuera del panel y cerrarlo. */
+.account-dismiss-layer { position: fixed; z-index: 45; inset: 0; width: 100%; height: 100%; background: transparent; border: 0; }
+
+/* Construye la tarjeta flotante personalizada con los datos de cuenta. */
+.account-card { position: absolute; z-index: 46; top: calc(100% + .7rem); right: 0; width: min(20rem, calc(100vw - 2rem)); padding: 1rem; background: white; border: 1px solid #121c2a14; border-radius: 1.15rem; box-shadow: 0 18px 50px #1b181f29; }
+
+/* Alinea el avatar de mayor tamaño junto al nombre y correo de la cuenta. */
+.account-card-heading { display: flex; align-items: center; gap: .8rem; padding-bottom: .9rem; }
+
+/* Da al avatar de la tarjeta mayor presencia que al avatar del encabezado. */
+.account-card-avatar { width: 3rem; height: 3rem; font-size: .95rem; }
+
+/* Apila nombre y correo y permite que ambos puedan truncarse. */
+.account-card-identity { display: flex; min-width: 0; flex-direction: column; gap: .18rem; }
+
+/* Evita que el nombre o correo largos sobrepasen el ancho de la tarjeta. */
+.account-card-identity strong, .account-card-identity span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Resalta el nombre principal dentro del panel de cuenta. */
+.account-card-identity strong { font-size: .9rem; }
+
+/* Presenta el correo como información complementaria del usuario. */
+.account-card-identity span { color: #584237; font-size: .74rem; }
+
+/* Separa el rol de la identidad y del botón de cierre de sesión. */
+.account-card-role { display: flex; align-items: center; gap: .55rem; padding: .8rem 0; color: #584237; border-block: 1px solid #121c2a14; font-size: .78rem; }
+
+/* Aplica el color de marca al icono de validación del rol. */
+.account-card-role .material-symbols-outlined { color: #bb0112; font-size: 1.15rem; }
+
+/* Da contraste al valor del rol frente a su texto descriptivo. */
+.account-card-role strong { color: #121c2a; }
+
+/* Hace que la acción de salida ocupe el ancho del panel y sea fácil de encontrar. */
+.logout-action { display: flex; width: 100%; align-items: center; gap: .65rem; margin-top: .85rem; padding: .75rem .8rem; color: #9c0a18; background: #fff4f3; border: 1px solid #bb01121a; border-radius: .8rem; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 700; text-align: left; }
+
+/* Refuerza el significado de la acción al pasar el puntero. */
+.logout-action:hover:not(:disabled) { color: white; background: #bb0112; }
+
+/* Muestra el estado temporal no interactivo mientras Firebase cierra sesión. */
+.logout-action:disabled { cursor: wait; opacity: .65; }
+
+/* Oculta el control de navegación móvil mientras se usa la vista de escritorio. */
+.mobile-navigation-toggle { display: none; }
+
+/* Reacomoda la barra, búsqueda y cuenta para dispositivos de hasta 760 píxeles. */
+@media (max-width: 760px) {
+  /* La cabecera móvil ocupa todo el ancho, pues la navegación es deslizable. */
+  :host { left: 0; }
+
+  /* Reduce espacios laterales para preservar área útil en el teléfono. */
+  .workspace-header { gap: .65rem; padding: 0 .8rem; }
+
+  /* Muestra el botón para abrir la barra lateral fuera del escritorio. */
+  .mobile-navigation-toggle { display: grid; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; place-items: center; color: #121c2a; background: transparent; border: 0; border-radius: .7rem; font-size: 1.45rem; }
+
+  /* Permite que la búsqueda use el ancho disponible entre menú y avatar. */
+  .global-search { flex: 1 1 auto; width: auto; min-width: 5rem; height: 2.5rem; gap: .35rem; padding: 0 .55rem; }
+
+  /* Reduce el texto del input para mantenerlo legible en una barra compacta. */
+  .global-search input { font-size: .72rem; }
+
+  /* Reduce el botón de cuenta y conserva un avatar táctil. */
+  .account-trigger { gap: .35rem; padding: .25rem; }
+
+  /* Oculta nombre y chevron, que ya se muestran al abrir la tarjeta de cuenta. */
+  .account-summary, .account-chevron { display: none; }
+
+  /* Ajusta el avatar para que encaje con la altura de la cabecera móvil. */
+  .account-avatar { width: 2.35rem; height: 2.35rem; }
+}
+
+/* Conserva espacio para la búsqueda en teléfonos especialmente estrechos. */
+@media (max-width: 380px) {
+  /* Reduce el espacio exterior de la barra para maximizar el campo de búsqueda. */
+  .workspace-header { gap: .35rem; padding: 0 .45rem; }
+
+  /* Ajusta el ancho del botón de navegación para pantallas muy pequeñas. */
+  .mobile-navigation-toggle { width: 2.2rem; }
+
+  /* Reduce el padding del campo sin quitar el icono ni el texto de búsqueda. */
+  .global-search { padding: 0 .4rem; }
+
+  /* Evita que el avatar consuma demasiado espacio horizontal. */
+  .account-avatar { width: 2.15rem; height: 2.15rem; }
+}

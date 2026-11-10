@@ -1,0 +1,23 @@
+<!-- Contenedor compartido para páginas autenticadas con navegación lateral y barra superior. -->
+<div class="workspace-shell">
+  <!-- La barra lateral emite cambios de ruta para cerrar su variante móvil. -->
+  <app-workspace-sidebar
+    [isOpen]="isMobileNavigationOpen"
+    [userRole]="userRole"
+    (navigationSelected)="closeMobileNavigation()"
+  ></app-workspace-sidebar>
+
+  <!-- Área principal que reserva espacio para la navegación lateral de escritorio. -->
+  <div class="workspace-main">
+    <!-- El encabezado global controla la apertura del menú en pantallas pequeñas. -->
+    <app-workspace-header
+      (navigationToggle)="toggleMobileNavigation()"
+      (accountRoleLoaded)="updateUserRole($event)"
+    ></app-workspace-header>
+
+    <!-- Cada ruta hija presenta su pantalla debajo del encabezado común. -->
+    <main class="workspace-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

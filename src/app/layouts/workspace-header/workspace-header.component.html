@@ -1,0 +1,81 @@
+<!-- Encabezado persistente con búsqueda y cuenta, sin disponibilidad ni campana. -->
+<header class="workspace-header">
+  <!-- Abre la navegación lateral en pantallas compactas. -->
+  <button
+    class="mobile-navigation-toggle material-symbols-outlined"
+    type="button"
+    aria-label="Abrir navegación"
+    (click)="navigationToggle.emit()"
+  >
+    menu
+  </button>
+
+  <!-- Campo de búsqueda global con icono y texto de ayuda accesible. -->
+  <label class="global-search">
+    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+    <input
+      type="search"
+      aria-label="Buscar tickets"
+      placeholder="Buscar tickets por ID, usuario o equipo..."
+    />
+  </label>
+
+  <!-- Botón que muestra la identidad activa y abre la tarjeta de cuenta. -->
+  <div class="account-area" (keydown.escape)="closeAccountMenu()">
+    <button
+      class="account-trigger"
+      type="button"
+      aria-label="Abrir opciones de cuenta"
+      [attr.aria-expanded]="isAccountMenuOpen"
+      (click)="toggleAccountMenu()"
+    >
+      <!-- Presenta el nombre y el rol en escritorio, junto al avatar. -->
+      <span class="account-summary">
+        <span class="account-name">{{ accountName }}</span>
+        <span class="account-role">{{ accountRole }}</span>
+      </span>
+      <!-- Representa la cuenta mediante sus iniciales calculadas. -->
+      <span class="account-avatar" aria-hidden="true">{{ accountInitials || 'U' }}</span>
+      <!-- Indica visualmente si la tarjeta de cuenta está abierta. -->
+      <span class="account-chevron material-symbols-outlined" aria-hidden="true">
+        {{ isAccountMenuOpen ? 'expand_less' : 'expand_more' }}
+      </span>
+    </button>
+
+    <!-- Capa que cierra la tarjeta cuando se pulsa fuera de ella. -->
+    <button
+      *ngIf="isAccountMenuOpen"
+      class="account-dismiss-layer"
+      type="button"
+      aria-label="Cerrar opciones de cuenta"
+      (click)="closeAccountMenu()"
+    ></button>
+
+    <!-- Tarjeta visual de identidad y acción explícita de cierre de sesión. -->
+    <section *ngIf="isAccountMenuOpen" class="account-card" aria-label="Opciones de cuenta">
+      <!-- Agrupa el avatar grande con el nombre y correo de la sesión. -->
+      <div class="account-card-heading">
+        <span class="account-card-avatar">{{ accountInitials || 'U' }}</span>
+        <div class="account-card-identity">
+          <strong>{{ accountName }}</strong>
+          <span>{{ accountEmail || 'Cuenta de TicketDesk' }}</span>
+        </div>
+      </div>
+      <!-- Confirma el tipo de acceso que corresponde al perfil guardado. -->
+      <div class="account-card-role">
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <span>Acceso como <strong>{{ accountRole }}</strong></span>
+      </div>
+      <!-- Ejecuta el cierre de sesión y refleja su estado mientras está en curso. -->
+      <button
+        class="logout-action"
+        type="button"
+        [disabled]="isLoggingOut"
+        (click)="logout()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+        <span>{{ isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión' }}</span>
+      </button>
+    </section>
+  </div>
+</header>

@@ -1,0 +1,59 @@
+/* Centra la tarjeta temporal y conserva el fondo compartido del espacio de trabajo. */
+.section-placeholder {
+  display: grid;
+  min-height: calc(100vh - 4.5rem);
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background: #f8f9ff;
+}
+
+/* Presenta el anuncio de sección pendiente dentro de una tarjeta ligera. */
+.placeholder-card {
+  width: min(100%, 38rem);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: #fff;
+  border: 1px solid rgba(18, 28, 42, 0.07);
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 35px rgba(18, 28, 42, 0.06);
+  text-align: center;
+}
+
+/* Destaca el icono que comunica que la sección está en construcción. */
+.placeholder-icon {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  margin: 0 auto 1.25rem;
+  color: #a20d19;
+  background: #ffdad6;
+  border-radius: 1.1rem;
+  font-size: 1.7rem;
+}
+
+/* Identifica TicketDesk como el producto que contiene la pantalla temporal. */
+.placeholder-eyebrow {
+  margin: 0 0 0.5rem;
+  color: #a20d19;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Establece jerarquía clara para el nombre de la sección. */
+.placeholder-card h1 {
+  margin: 0;
+  color: #121c2a;
+  font-size: clamp(1.7rem, 4vw, 2.2rem);
+  letter-spacing: -0.04em;
+}
+
+/* Mantiene el mensaje secundario legible y de anchura cómoda. */
+.placeholder-description {
+  max-width: 28rem;
+  margin: 0.75rem auto 0;
+  color: #584237;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}

@@ -34,6 +34,7 @@ TicketDesk es una plataforma centralizada de soporte interno diseñada para reso
 
 ## 📁 Estructura del Proyecto
 - `src/app/core`: Configuraciones globales y servicios base (ej. `firebase.config.ts`).
+- `src/app/layouts`: Contenedores compartidos de las secciones autenticadas (ej. navegación y barra superior).
 - `src/app/models`: Definiciones de interfaces y tipos de datos (ej. `ticket.ts`).
 - `src/app/services`: Lógica de negocio y comunicación con la API/DB (ej. `tickets.ts`).
 - `src/app/pages`: Componentes de vista y pantallas de la aplicación.

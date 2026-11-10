@@ -1,0 +1,27 @@
+/* Comparte dimensiones y colores con las barras laterales y superiores. */
+:host {
+  --sidebar-width: 16rem;
+  --header-height: 4.5rem;
+  display: block;
+  min-height: 100vh;
+  background: #f8f9ff;
+}
+
+/* Desplaza las páginas para evitar que queden debajo de la barra fija lateral. */
+.workspace-main {
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
+}
+
+/* Separa el contenido de página del encabezado persistente. */
+.workspace-content {
+  min-height: 100vh;
+  padding-top: var(--header-height);
+}
+
+/* Recupera el ancho completo cuando la navegación se convierte en panel móvil. */
+@media (max-width: 760px) {
+  .workspace-main {
+    margin-left: 0;
+  }
+}

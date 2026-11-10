@@ -1,0 +1,34 @@
+<!-- Capa táctil que cierra la navegación lateral en teléfonos y tabletas. -->
+<button
+  *ngIf="isOpen"
+  class="sidebar-backdrop"
+  type="button"
+  aria-label="Cerrar navegación"
+  (click)="navigationSelected.emit()"
+></button>
+
+<!-- Navegación común sin subtítulo de Panel Técnico ni estado de mesa. -->
+<aside class="workspace-sidebar" [class.workspace-sidebar-open]="isOpen">
+  <!-- Marca TicketDesk con el icono del sistema de tickets. -->
+  <a class="brand" routerLink="/dashboard" (click)="navigationSelected.emit()">
+    <span class="brand-icon material-symbols-outlined" aria-hidden="true">confirmation_number</span>
+    <span class="brand-name">TicketDesk</span>
+  </a>
+
+  <!-- Enlaces disponibles según el rol cargado para la cuenta actual. -->
+  <nav class="workspace-navigation" aria-label="Operaciones">
+    <span class="navigation-heading">Operaciones</span>
+    <a
+      *ngFor="let item of visibleNavigationItems"
+      class="navigation-link"
+      [class.navigation-link-create]="item.route === '/new-ticket'"
+      [routerLink]="item.route"
+      routerLinkActive="navigation-link-active"
+      [routerLinkActiveOptions]="{ exact: item.exact }"
+      (click)="navigationSelected.emit()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+      <span>{{ item.label }}</span>
+    </a>
+  </nav>
+</aside>

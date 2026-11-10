@@ -1,8 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { auth, db } from '../../core/firebase.config';
-import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 /**
@@ -32,15 +31,10 @@ export class DashboardComponent implements OnInit {
   username: string = 'Cargando...';
   userRole: string | null = null;
   isLoading = false; 
-  /** Evita solicitudes repetidas y refleja el proceso de cierre de sesión. */
-  isLoggingOut = false;
   hasError = false;
 
-  /** Inyecta detección de cambios y navegación para las acciones del panel. */
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private router: Router
-  ) {}
+  /** Inyecta detección de cambios para actualizar la vista tras cargar los datos. */
+  constructor(private cdr: ChangeDetectorRef) {}
 
   async ngOnInit() {
     console.log('🚀 [Dashboard] Ejecutando ngOnInit...');
@@ -100,22 +94,4 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  /**
-   * Cierra la sesión persistida de Firebase y devuelve al usuario al login.
-   * Firebase elimina la sesión local al completar signOut.
-   */
-  async logout() {
-    if (this.isLoggingOut) return;
-
-    this.isLoggingOut = true;
-    try {
-      await signOut(auth);
-      await this.router.navigate(['/login']);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      alert('No se pudo cerrar la sesión. Inténtalo de nuevo.');
-    } finally {
-      this.isLoggingOut = false;
-    }
-  }
 }

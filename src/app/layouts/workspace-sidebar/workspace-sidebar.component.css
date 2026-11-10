@@ -1,0 +1,80 @@
+/* Posiciona el host como columna fija junto al borde izquierdo. */
+:host {
+  position: fixed;
+  z-index: 50;
+  inset: 0 auto 0 0;
+  display: block;
+  width: var(--sidebar-width, 16rem);
+}
+
+/* Ordena el contenido de navegación sobre la superficie lateral. */
+.workspace-sidebar {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.25rem 1rem;
+  background: #fff;
+  border-right: 1px solid #121c2a12;
+  box-shadow: 0 1px 8px #0000000a;
+}
+
+/* Alinea el icono de marca y el nombre del producto. */
+.brand { display: flex; min-height: 3rem; align-items: center; gap: .75rem; padding: 0 .5rem; color: #121c2a; text-decoration: none; }
+
+/* Resalta el icono de TicketDesk con el color primario. */
+.brand-icon { display: grid; width: 2.5rem; height: 2.5rem; place-items: center; color: #fff; background: #bb0112; border-radius: .75rem; font-size: 1.35rem; }
+
+/* Establece la jerarquía tipográfica del nombre de marca. */
+.brand-name { font-size: 1.1rem; font-weight: 750; letter-spacing: -.035em; }
+
+/* Apila las opciones de navegación debajo del encabezado de sección. */
+.workspace-navigation { display: flex; flex-direction: column; gap: .4rem; }
+
+/* Diferencia el rótulo Operaciones de los enlaces. */
+.navigation-heading { margin: 0 0 .45rem; padding: 0 .75rem; color: #584237; font-size: .68rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+
+/* Define el tamaño, alineación y estilo base de cada enlace lateral. */
+.navigation-link {
+  display: flex;
+  min-height: 2.85rem;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .75rem;
+  color: #625e64;
+  border-radius: .8rem;
+  font-size: .9rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+/* Mantiene los iconos con tamaño constante junto al texto del enlace. */
+.navigation-link .material-symbols-outlined { font-size: 1.25rem; }
+
+/* Indica que un enlace está listo para seleccionarse al pasar el puntero. */
+.navigation-link:hover { color: #121c2a; background: #eff4ff; }
+
+/* Marca la ruta actual mediante fondo suave y texto de énfasis. */
+.navigation-link-active { color: #8c0712; background: #ffdad6; }
+
+/* Da a Nuevo Ticket un tratamiento destacado sin alterar el resto de rutas. */
+.navigation-link-create { margin-top: .4rem; color: #bb0112; border: 1px solid #bb01122e; }
+
+/* Mantiene oculta la capa de cierre mientras la navegación permanece cerrada. */
+.sidebar-backdrop { display: none; }
+
+/* Convierte la barra fija en un panel deslizable en pantallas compactas. */
+@media (max-width: 760px) {
+  /* Desplaza el panel fuera de la vista hasta que el contenedor lo abra. */
+  :host { width: min(var(--sidebar-width, 16rem), calc(100vw - 3.5rem)); transform: translateX(-105%); transition: transform 200ms ease; }
+
+  /* Devuelve el panel al área visible cuando el menú móvil está activo. */
+  :host(.workspace-sidebar-host-open) { transform: translateX(0); }
+
+  /* Mantiene la columna por encima de la capa oscura de fondo. */
+  .workspace-sidebar { position: relative; z-index: 1; }
+
+  /* Cubre el contenido y permite cerrar el panel al pulsar fuera de él. */
+  .sidebar-backdrop { position: fixed; z-index: -1; inset: 0; display: block; width: 100vw; height: 100vh; background: #121c2a59; border: 0; }
+}
