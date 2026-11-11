@@ -83,18 +83,13 @@ export class LoginComponent {
     this.isGoogleLoading = true;
     try {
       const provider = new GoogleAuthProvider();
-      if (this.isMobileBrowser()) {
-        await signInWithPopup(auth, provider);
+      await signInWithPopup(auth, provider);
 
-        try {
-          await setAuthPersistence();
-        } catch (persistenceError) {
-          console.error('No se pudo establecer la persistencia local:', persistenceError);
-          alert('Se inició sesión, pero no se pudo mantener la sesión en este navegador.');
-        }
-      } else {
+      try {
         await setAuthPersistence();
-        await signInWithPopup(auth, provider);
+      } catch (persistenceError) {
+        console.error('No se pudo establecer la persistencia local:', persistenceError);
+        alert('Se inició sesión, pero no se pudo mantener la sesión en este navegador.');
       }
 
       await this.router.navigate(['/dashboard']);
@@ -108,14 +103,6 @@ export class LoginComponent {
     } finally {
       this.isGoogleLoading = false;
     }
-  }
-
-  /**
-   * Identifica teléfonos por las marcas habituales de sus user agents para
-   * separar el flujo móvil del popup de escritorio, que permanece sin cambios.
-   */
-  private isMobileBrowser(): boolean {
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   }
 
   /** Controla la visibilidad del texto de la contraseña. */

@@ -1,20 +1,15 @@
 <!-- Contiene el encabezado, las métricas y el directorio real de cuentas. -->
 <main class="users-page">
-  <!-- Presenta el título y el texto de acceso solicitado para la sección. -->
+  <!-- Presenta el título y resume la administración de roles disponibles. -->
   <header class="users-heading">
     <div>
       <p class="users-eyebrow">Control de Acceso</p>
       <h1># Usuarios y técnicos</h1>
-      <p>Gestiona las cuentas de acceso corporativas y asigna los roles de permisos del equipo.</p>
+      <p>Consulta las cuentas registradas y asigna los roles de acceso del equipo.</p>
     </div>
-    <!-- Abre la ventana para crear una cuenta autenticable en Firebase. -->
-    <button class="add-user-button" type="button" (click)="openCreateDialog()">
-      <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
-      Agregar usuario
-    </button>
   </header>
 
-  <!-- Muestra métricas calculadas con los documentos existentes en Firestore. -->
+  <!-- Muestra métricas calculadas con los perfiles existentes en Firestore. -->
   <section class="users-stats" aria-label="Resumen de miembros">
     <article class="stat-card">
       <span class="stat-icon material-symbols-outlined" aria-hidden="true">groups</span>
@@ -65,20 +60,64 @@
           aria-label="Buscar por nombre, correo o área"
         />
       </label>
-      <label class="department-control">
-        <span class="visually-hidden">Filtrar por departamento</span>
-        <select
-          name="departmentFilter"
-          [(ngModel)]="selectedDepartment"
-          (ngModelChange)="resetPagination()"
+      <div class="department-dropdown">
+        <span id="department-filter-label" class="visually-hidden">Filtrar por departamento</span>
+        <button
+          type="button"
+          class="department-filter-trigger"
+          aria-haspopup="listbox"
+          aria-labelledby="department-filter-label"
+          aria-controls="department-filter-options"
+          [attr.aria-expanded]="isDepartmentMenuOpen"
+          (click)="toggleDepartmentMenu()"
         >
-          <option value="">Todos los departamentos</option>
-          <option *ngFor="let department of departments" [value]="department">
-            {{ department }}
-          </option>
-        </select>
-        <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
-      </label>
+          <span>{{ selectedDepartment || 'Todos los departamentos' }}</span>
+          <span
+            class="material-symbols-outlined department-filter-chevron"
+            [class.department-filter-chevron-open]="isDepartmentMenuOpen"
+            aria-hidden="true"
+          >expand_more</span>
+        </button>
+        <div
+          *ngIf="isDepartmentMenuOpen"
+          id="department-filter-options"
+          class="department-filter-options"
+          role="listbox"
+          aria-labelledby="department-filter-label"
+        >
+          <button
+            type="button"
+            class="department-filter-option"
+            [class.department-filter-option-active]="!selectedDepartment"
+            role="option"
+            [attr.aria-selected]="!selectedDepartment"
+            (click)="selectDepartment('')"
+          >
+            <span>Todos los departamentos</span>
+            <span
+              *ngIf="!selectedDepartment"
+              class="material-symbols-outlined department-filter-check"
+              aria-hidden="true"
+            >check</span>
+          </button>
+          <button
+            *ngFor="let department of departments"
+            type="button"
+            class="department-filter-option"
+            [class.department-filter-option-active]="selectedDepartment === department"
+            role="option"
+            [attr.aria-selected]="selectedDepartment === department"
+            (click)="selectDepartment(department)"
+          >
+            <span>{{ department }}</span>
+            <span
+              *ngIf="selectedDepartment === department"
+              class="material-symbols-outlined department-filter-check"
+              aria-hidden="true"
+            >check</span>
+          </button>
+        </div>
+      </div>
       <button class="refresh-button" type="button" (click)="loadUsers()" [disabled]="isLoading">
         <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
         Actualizar
@@ -184,9 +223,9 @@
     </footer>
   </section>
 
-  <!-- Comparte el diálogo para alta, consulta, edición y baja de cuentas. -->
+  <!-- Comparte el diálogo de consulta y asignación de roles. -->
   <div
-    *ngIf="dialogMode === 'create' || selectedUser"
+    *ngIf="selectedUser"
     class="details-backdrop"
     (click)="!isSavingUser && closeDetails()"
   >
@@ -201,7 +240,7 @@
         <div>
           <p>Control de Acceso</p>
           <h2 id="details-title">
-            {{ dialogMode === 'create' ? 'Agregar usuario' : dialogMode === 'edit' ? 'Editar usuario' : 'Detalles del miembro' }}
+            {{ dialogMode === 'edit-role' ? 'Cambiar rol' : 'Detalles del miembro' }}
           </h2>
         </div>
         <button type="button" aria-label="Cerrar detalles" [disabled]="isSavingUser" (click)="closeDetails()">
@@ -226,86 +265,78 @@
         </dl>
       </ng-container>
 
-      <!-- Recopila los datos para crear una cuenta o actualizar un perfil existente. -->
+      <!-- Permite elegir un rol permitido sin modificar los demás datos del perfil. -->
       <form
-        *ngIf="dialogMode === 'create' || dialogMode === 'edit'"
-        id="user-account-form"
+        *ngIf="dialogMode === 'edit-role' && selectedUser as user"
+        id="user-role-form"
         class="user-edit-form"
         (ngSubmit)="saveUser()"
       >
-        <label *ngIf="dialogMode === 'create'" for="new-user-email">
-          Correo corporativo
-          <input
-            id="new-user-email"
-            name="email"
-            type="email"
-            autocomplete="email"
-            [(ngModel)]="userForm.email"
-            required
-            email
-          />
-        </label>
-        <label *ngIf="dialogMode === 'create'" for="new-user-password">
-          Contraseña temporal
-          <input
-            id="new-user-password"
-            name="password"
-            type="password"
-            autocomplete="new-password"
-            minlength="6"
-            [(ngModel)]="userForm.password"
-            required
-          />
-          <small>Entrega la contraseña al usuario por un canal seguro.</small>
-        </label>
-        <label *ngIf="dialogMode === 'edit'" for="edit-user-email">
-          Correo corporativo
-          <input id="edit-user-email" name="emailReadonly" type="email" [value]="userForm.email" disabled />
-          <small>El correo de inicio de sesión no se modifica desde esta pantalla.</small>
-        </label>
-        <label for="user-username">
-          Nombre
-          <input
-            id="user-username"
-            name="username"
-            type="text"
-            maxlength="100"
-            autocomplete="name"
-            [(ngModel)]="userForm.username"
-            required
-          />
-        </label>
-        <label for="user-department">
-          Departamento
-          <input
-            id="user-department"
-            name="department"
-            type="text"
-            maxlength="100"
-            [(ngModel)]="userForm.department"
-            required
-          />
-        </label>
-        <label for="user-phone">
-          Teléfono
-          <input
-            id="user-phone"
-            name="phone"
-            type="tel"
-            maxlength="40"
-            autocomplete="tel"
-            [(ngModel)]="userForm.phone"
-            required
-          />
-        </label>
-        <label for="user-role">
+        <div class="role-picker-field">
           Rol
-          <select id="user-role" name="role" [(ngModel)]="userForm.role" required>
-            <option value="user">Usuario</option>
-            <option value="technician">Técnico</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </label>
+          <div class="role-picker">
+            <button
+              id="user-role"
+              class="role-picker-trigger"
+              type="button"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="isRoleMenuOpen"
+              aria-controls="user-role-options"
+              (click)="toggleRoleMenu()"
+            >
+              <span class="role-picker-current">
+                <span class="material-symbols-outlined" aria-hidden="true">
+                  {{ roleIcon(userForm.role) }}
+                </span>
+                <span>{{ roleLabel(userForm.role) }}</span>
+              </span>
+              <span
+                class="material-symbols-outlined role-picker-chevron"
+                [class.role-picker-chevron-open]="isRoleMenuOpen"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="isRoleMenuOpen"
+              id="user-role-options"
+              class="role-picker-options"
+              role="listbox"
+              aria-label="Roles disponibles"
+            >
+              <button
+                *ngFor="let option of roleOptions"
+                class="role-picker-option"
+                [class.role-picker-option-selected]="userForm.role === option.value"
+                type="button"
+                role="option"
+                [attr.aria-selected]="userForm.role === option.value"
+                [disabled]="option.value === 'user' && user.role !== 'user'"
+                (click)="selectRole(option.value)"
+              >
+                <span class="role-picker-option-icon material-symbols-outlined" aria-hidden="true">
+                  {{ option.icon }}
+                </span>
+                <span class="role-picker-option-copy">
+                  <span>{{ option.label }}</span>
+                  <small>{{ option.description }}</small>
+                </span>
+                <span
+                  *ngIf="userForm.role === option.value"
+                  class="material-symbols-outlined role-picker-option-check"
+                  aria-label="Seleccionado"
+                >check_circle</span>
+                <span
+                  *ngIf="option.value === 'user' && user.role !== 'user'"
+                  class="material-symbols-outlined role-picker-option-lock"
+                  aria-label="No disponible"
+                >lock</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="role-change-notice">
+          Este cambio solo modifica los permisos del perfil. No altera el correo ni la contraseña.
+        </p>
       </form>
 
       <!-- Informa fallos de validación o de Firebase dentro del mismo diálogo. -->
@@ -314,18 +345,22 @@
         {{ dialogError }}
       </div>
 
-      <!-- Muestra acciones de consulta, edición, eliminación o guardado. -->
+      <!-- Muestra acciones de consulta o confirmación del nuevo rol. -->
       <footer class="details-dialog-footer">
-        <ng-container *ngIf="dialogMode === 'details'; else editDialogActions">
+        <ng-container *ngIf="dialogMode === 'details'; else roleDialogActions">
           <button type="button" class="dialog-secondary-action" [disabled]="isSavingUser" (click)="closeDetails()">
             Cerrar
           </button>
-          <button type="button" class="dialog-danger-action" [disabled]="isSavingUser" (click)="deleteSelectedUser()">
-            Eliminar
+          <button
+            *ngIf="canChangeRole(selectedUser)"
+            type="button"
+            [disabled]="isSavingUser"
+            (click)="beginEdit()"
+          >
+            Cambiar rol
           </button>
-          <button type="button" [disabled]="isSavingUser" (click)="beginEdit()">Editar</button>
         </ng-container>
-        <ng-template #editDialogActions>
+        <ng-template #roleDialogActions>
           <button
             type="button"
             class="dialog-secondary-action"
@@ -336,10 +371,10 @@
           </button>
           <button
             type="submit"
-            form="user-account-form"
+            form="user-role-form"
             [disabled]="isSavingUser"
           >
-            {{ isSavingUser ? 'Guardando...' : dialogMode === 'create' ? 'Crear cuenta' : 'Guardar cambios' }}
+            {{ isSavingUser ? 'Guardando...' : 'Guardar rol' }}
           </button>
         </ng-template>
       </footer>

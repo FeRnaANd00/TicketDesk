@@ -1,0 +1,432 @@
+<!-- Agrupa el encabezado, controles, lista y estados de la pantalla de tickets. -->
+<main class="tickets-page">
+  <!-- Resume los tickets activos del usuario sin depender de su rol. -->
+  <header class="tickets-heading">
+    <div>
+      <p class="tickets-eyebrow">Mesa de ayuda</p>
+      <h1>Mis tickets</h1>
+      <p>Consulta y da seguimiento a las incidencias que has reportado.</p>
+    </div>
+    <a class="create-ticket-button" routerLink="/new-ticket">
+      <span class="material-symbols-outlined" aria-hidden="true">add</span>
+      Nuevo ticket
+    </a>
+  </header>
+
+  <!-- Destaca el total de incidencias que todavía no se han cerrado. -->
+  <section class="active-summary" aria-label="Resumen de tickets activos">
+    <span class="summary-icon material-symbols-outlined" aria-hidden="true">confirmation_number</span>
+    <div>
+      <p>Tickets abiertos (activos)</p>
+      <strong>{{ activeTicketCount }}</strong>
+    </div>
+    <span class="summary-caption">excluye los tickets cerrados</span>
+  </section>
+
+  <!-- Advierte cuando Firebase no pudo determinar si el perfil puede editar. -->
+  <div *ngIf="permissionError" class="ticket-edit-permission-error" role="alert">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    <span>{{ permissionError }}</span>
+  </div>
+
+  <!-- Permite buscar tickets propios y limitar la tabla por estado. -->
+  <section class="tickets-list-card" aria-label="Listado de tickets">
+    <div class="list-toolbar">
+      <label class="search-control">
+        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+        <span class="visually-hidden">Buscar tickets</span>
+        <input
+          type="search"
+          name="ticketSearch"
+          placeholder="Buscar por ID, título, solicitante o categoría"
+          [(ngModel)]="searchTerm"
+        />
+      </label>
+
+      <div class="status-dropdown">
+        <span id="ticket-status-label" class="visually-hidden">Filtrar por estado</span>
+        <button
+          type="button"
+          class="status-filter-trigger"
+          aria-haspopup="listbox"
+          aria-labelledby="ticket-status-label"
+          aria-controls="ticket-status-options"
+          [attr.aria-expanded]="isStatusMenuOpen"
+          (click)="isStatusMenuOpen = !isStatusMenuOpen"
+        >
+          <span>{{ statusFilter }}</span>
+          <span
+            class="material-symbols-outlined status-filter-chevron"
+            aria-hidden="true"
+          >expand_more</span>
+        </button>
+        <div
+          *ngIf="isStatusMenuOpen"
+          id="ticket-status-options"
+          class="status-filter-options"
+          role="listbox"
+          aria-labelledby="ticket-status-label"
+        >
+          <button
+            *ngFor="let status of statusOptions"
+            type="button"
+            class="status-filter-option"
+            [class.status-filter-option-active]="statusFilter === status"
+            role="option"
+            [attr.aria-selected]="statusFilter === status"
+            (click)="selectStatusFilter(status)"
+          >
+            <span>{{ status }}</span>
+            <span
+              *ngIf="statusFilter === status"
+              class="material-symbols-outlined status-filter-check"
+              aria-hidden="true"
+            >check</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Muestra una señal de actividad mientras se consulta Firestore. -->
+    <div *ngIf="isLoading" class="list-state" role="status">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <p>Cargando tus tickets...</p>
+    </div>
+
+    <!-- Informa del fallo y deja disponible un reintento explícito. -->
+    <div *ngIf="!isLoading && loadError" class="list-state list-error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+      <p>{{ loadError }}</p>
+      <button type="button" class="secondary-button" (click)="loadTickets()">Intentar de nuevo</button>
+    </div>
+
+    <!-- Distingue entre una cuenta sin tickets y una búsqueda sin coincidencias. -->
+    <div
+      *ngIf="!isLoading && !loadError && tickets.length === 0"
+      class="list-state"
+      role="status"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+      <h2>Aún no has creado tickets</h2>
+      <p>Cuando reportes una incidencia, aparecerá aquí para que puedas consultarla.</p>
+      <a class="secondary-button" routerLink="/new-ticket">Crear mi primer ticket</a>
+    </div>
+    <div
+      *ngIf="!isLoading && !loadError && tickets.length > 0 && filteredTickets.length === 0"
+      class="list-state"
+      role="status"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
+      <h2>No encontramos tickets</h2>
+      <p>Prueba con otro texto o cambia el estado seleccionado.</p>
+    </div>
+
+    <!-- Presenta los campos solicitados en una tabla con desplazamiento móvil. -->
+    <div
+      *ngIf="!isLoading && !loadError && filteredTickets.length > 0"
+      class="table-scroll"
+    >
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Título</th>
+            <th scope="col">Solicitante</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Prioridad</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId">
+            <td class="ticket-number">{{ getTicketNumber(ticket) }}</td>
+            <td class="ticket-title-cell">
+              <strong>{{ ticket.titulo }}</strong>
+              <span>{{ ticket.descripcion }}</span>
+            </td>
+            <td>{{ ticket.clienteNombre || 'Usuario' }}</td>
+            <td>{{ ticket.categoria }}</td>
+            <td>
+              <span class="priority-badge" [ngClass]="getPriorityClass(ticket.prioridad)">
+                {{ getPriorityLabel(ticket.prioridad) }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="status-badge"
+                [ngClass]="'status-' + getDisplayStatus(ticket).toLocaleLowerCase('es')"
+              >
+                {{ getDisplayStatus(ticket) }}
+              </span>
+            </td>
+            <td class="ticket-date">
+              {{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}
+            </td>
+            <td>
+              <button
+                type="button"
+                class="view-ticket-button"
+                [attr.aria-label]="'Ver ticket ' + getTicketNumber(ticket)"
+                (click)="showDetails(ticket)"
+              >
+                Ver
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Expone la descripción completa del ticket sin crear una ruta nueva. -->
+  <div
+    *ngIf="selectedTicket as ticket"
+    class="ticket-dialog-backdrop"
+    role="presentation"
+    (click)="closeDetails()"
+  >
+    <section
+      class="ticket-dialog"
+      [class.ticket-dialog-dropdown-open]="openTicketEditDropdown !== null"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ticket-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog-heading">
+        <div>
+          <p class="tickets-eyebrow">{{ getTicketNumber(ticket) }}</p>
+          <h2 id="ticket-dialog-title">{{ ticket.titulo }}</h2>
+        </div>
+        <button
+          type="button"
+          class="dialog-close-button"
+          aria-label="Cerrar detalles"
+          (click)="closeDetails()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+      <form
+        *ngIf="isEditingTicket; else ticketDetails"
+        class="ticket-edit-form"
+        (ngSubmit)="saveTicketChanges()"
+      >
+        <div
+          class="ticket-edit-field"
+          [class.ticket-edit-field-open]="openTicketEditDropdown === 'category'"
+        >
+          <span>Categoría</span>
+          <div class="ticket-edit-dropdown department-dropdown">
+            <button
+              type="button"
+              class="department-filter-trigger"
+              aria-haspopup="listbox"
+              aria-label="Seleccionar categoría"
+              [attr.aria-expanded]="openTicketEditDropdown === 'category'"
+              (click)="toggleTicketEditDropdown('category')"
+            >
+              <span>{{ ticketEditForm.categoria }}</span>
+              <span
+                class="material-symbols-outlined department-filter-chevron"
+                [class.department-filter-chevron-open]="openTicketEditDropdown === 'category'"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="openTicketEditDropdown === 'category'"
+              class="department-filter-options"
+              role="listbox"
+              aria-label="Categorías disponibles"
+            >
+              <button
+                *ngFor="let category of categoryOptions"
+                type="button"
+                class="department-filter-option"
+                [class.department-filter-option-active]="ticketEditForm.categoria === category"
+                role="option"
+                [attr.aria-selected]="ticketEditForm.categoria === category"
+                (click)="selectTicketCategory(category)"
+              >
+                <span>{{ category }}</span>
+                <span
+                  *ngIf="ticketEditForm.categoria === category"
+                  class="material-symbols-outlined department-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="ticket-edit-field"
+          [class.ticket-edit-field-open]="openTicketEditDropdown === 'state'"
+        >
+          <span>Estado</span>
+          <div class="ticket-edit-dropdown department-dropdown">
+            <button
+              type="button"
+              class="department-filter-trigger"
+              aria-haspopup="listbox"
+              aria-label="Seleccionar estado"
+              [attr.aria-expanded]="openTicketEditDropdown === 'state'"
+              (click)="toggleTicketEditDropdown('state')"
+            >
+              <span>{{ getSelectedEditStateLabel() }}</span>
+              <span
+                class="material-symbols-outlined department-filter-chevron"
+                [class.department-filter-chevron-open]="openTicketEditDropdown === 'state'"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="openTicketEditDropdown === 'state'"
+              class="department-filter-options"
+              role="listbox"
+              aria-label="Estados disponibles"
+            >
+              <button
+                *ngFor="let option of ticketEditStatusOptions"
+                type="button"
+                class="department-filter-option"
+                [class.department-filter-option-active]="ticketEditForm.estado === option.value"
+                role="option"
+                [attr.aria-selected]="ticketEditForm.estado === option.value"
+                (click)="selectTicketState(option.value)"
+              >
+                <span>{{ option.label }}</span>
+                <span
+                  *ngIf="ticketEditForm.estado === option.value"
+                  class="material-symbols-outlined department-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="ticket-edit-field"
+          [class.ticket-edit-field-open]="openTicketEditDropdown === 'technician'"
+        >
+          <span>Técnico asignado</span>
+          <div class="ticket-edit-dropdown department-dropdown">
+            <button
+              type="button"
+              class="department-filter-trigger"
+              aria-haspopup="listbox"
+              aria-label="Seleccionar técnico asignado"
+              [attr.aria-expanded]="openTicketEditDropdown === 'technician'"
+              [disabled]="isLoadingTechnicians"
+              (click)="toggleTicketEditDropdown('technician')"
+            >
+              <span>{{ isLoadingTechnicians ? 'Cargando técnicos...' : getSelectedTechnicianLabel() }}</span>
+              <span
+                class="material-symbols-outlined department-filter-chevron"
+                [class.department-filter-chevron-open]="openTicketEditDropdown === 'technician'"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="openTicketEditDropdown === 'technician'"
+              class="department-filter-options"
+              role="listbox"
+              aria-label="Técnicos disponibles"
+            >
+              <button
+                type="button"
+                class="department-filter-option"
+                [class.department-filter-option-active]="!ticketEditForm.tecnicoAsignadoId"
+                role="option"
+                [attr.aria-selected]="!ticketEditForm.tecnicoAsignadoId"
+                (click)="selectAssignedTechnician('')"
+              >
+                <span>Sin asignar</span>
+                <span
+                  *ngIf="!ticketEditForm.tecnicoAsignadoId"
+                  class="material-symbols-outlined department-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
+              <button
+                *ngFor="let technician of technicians"
+                type="button"
+                class="department-filter-option"
+                [class.department-filter-option-active]="ticketEditForm.tecnicoAsignadoId === technician.uid"
+                role="option"
+                [attr.aria-selected]="ticketEditForm.tecnicoAsignadoId === technician.uid"
+                (click)="selectAssignedTechnician(technician.uid)"
+              >
+                <span>{{ technician.username }}{{ technician.department ? ' · ' + technician.department : '' }}</span>
+                <span
+                  *ngIf="ticketEditForm.tecnicoAsignadoId === technician.uid"
+                  class="material-symbols-outlined department-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p *ngIf="isLoadingTechnicians" class="ticket-edit-hint" role="status">
+          Cargando técnicos disponibles...
+        </p>
+        <p *ngIf="technicianLoadError" class="ticket-edit-error" role="alert">
+          {{ technicianLoadError }}
+          <button type="button" class="ticket-retry-button" (click)="loadTechnicians()">
+            Reintentar
+          </button>
+        </p>
+        <p *ngIf="ticketEditError" class="ticket-edit-error" role="alert">
+          {{ ticketEditError }}
+        </p>
+      </form>
+
+      <ng-template #ticketDetails>
+        <dl class="ticket-detail-grid">
+          <div><dt>Solicitante</dt><dd>{{ ticket.clienteNombre || 'Usuario' }}</dd></div>
+          <div><dt>Categoría</dt><dd>{{ ticket.categoria }}</dd></div>
+          <div><dt>Prioridad</dt><dd>{{ getPriorityLabel(ticket.prioridad) }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ getDisplayStatus(ticket) }}</dd></div>
+          <div><dt>Técnico asignado</dt><dd>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</dd></div>
+          <div><dt>Fecha</dt><dd>{{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}</dd></div>
+        </dl>
+        <div class="ticket-description">
+          <h3>Descripción</h3>
+          <p>{{ ticket.descripcion }}</p>
+        </div>
+      </ng-template>
+      <footer class="ticket-dialog-actions">
+        <ng-container *ngIf="isEditingTicket; else detailsActions">
+          <button
+            type="button"
+            class="ticket-cancel-edit-button"
+            [disabled]="isSavingTicket"
+            (click)="cancelTicketEdit()"
+          >Cancelar</button>
+          <button
+            type="button"
+            class="ticket-save-edit-button"
+            [disabled]="isSavingTicket"
+            (click)="saveTicketChanges()"
+          >{{ isSavingTicket ? 'Guardando...' : 'Guardar cambios' }}</button>
+        </ng-container>
+        <ng-template #detailsActions>
+          <button
+            *ngIf="canManageTickets"
+            type="button"
+            class="ticket-save-edit-button"
+            (click)="beginTicketEdit(ticket)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+            Editar ticket
+          </button>
+        </ng-template>
+      </footer>
+    </section>
+  </div>
+</main>

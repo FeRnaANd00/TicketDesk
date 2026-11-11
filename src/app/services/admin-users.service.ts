@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../core/firebase.config';
+import { doc, writeBatch } from 'firebase/firestore';
+import { db } from '../core/firebase.config';
 
 /** Roles que el administrador puede asignar a una cuenta. */
 export type ManagedUserRole = 'admin' | 'technician' | 'user';
@@ -15,65 +15,27 @@ export interface ManagedUser {
   role: ManagedUserRole;
 }
 
-/** Campos de perfil y autenticación requeridos para crear una cuenta. */
-export interface CreateManagedUserRequest {
-  email: string;
-  password: string;
-  username: string;
-  department: string;
-  phone: string;
-  role: ManagedUserRole;
-}
-
-/** Campos editables de una cuenta ya registrada. */
-export interface UpdateManagedUserRequest {
-  uid: string;
-  username: string;
-  department: string;
-  phone: string;
-  role: ManagedUserRole;
-}
-
-/** Servicio de acceso a las operaciones administrativas confiables de Firebase. */
+/** Servicio de cambios de rol y sincronización del catálogo de técnicos. */
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
-  /** Instancia callable de Functions vinculada al proyecto de la aplicación. */
-  private readonly functions = getFunctions(app, 'us-central1');
+  /** Actualiza el rol de una cuenta y sincroniza su ficha técnica en una sola operación. */
+  async updateRole(user: Pick<ManagedUser, 'uid' | 'username' | 'department' | 'role'>): Promise<void> {
+    const batch = writeBatch(db);
+    const userReference = doc(db, 'users', user.uid);
+    const technicianReference = doc(db, 'technicianDirectory', user.uid);
 
-  /** Solicita al backend la lista de cuentas después de verificar administrador. */
-  async list(): Promise<ManagedUser[]> {
-    const operation = httpsCallable<void, { users: ManagedUser[] }>(
-      this.functions,
-      'adminListUsers'
-    );
-    const result = await operation();
-    return result.data.users;
-  }
+    batch.update(userReference, { role: user.role });
 
-  /** Crea en Authentication y Firestore una cuenta y su perfil inicial. */
-  async create(user: CreateManagedUserRequest): Promise<void> {
-    const operation = httpsCallable<CreateManagedUserRequest, { uid: string }>(
-      this.functions,
-      'adminCreateUser'
-    );
-    await operation(user);
-  }
+    if (user.role === 'technician') {
+      batch.set(technicianReference, {
+        uid: user.uid,
+        username: user.username,
+        department: user.department
+      });
+    } else {
+      batch.delete(technicianReference);
+    }
 
-  /** Actualiza el perfil y la asignación de rol desde el entorno confiable. */
-  async update(user: UpdateManagedUserRequest): Promise<void> {
-    const operation = httpsCallable<UpdateManagedUserRequest, { success: boolean }>(
-      this.functions,
-      'adminUpdateUser'
-    );
-    await operation(user);
-  }
-
-  /** Elimina la cuenta de Authentication y su ficha de usuario. */
-  async delete(uid: string): Promise<void> {
-    const operation = httpsCallable<{ uid: string }, { success: boolean }>(
-      this.functions,
-      'adminDeleteUser'
-    );
-    await operation({ uid });
+    await batch.commit();
   }
 }

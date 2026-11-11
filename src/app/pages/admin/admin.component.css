@@ -2,12 +2,11 @@
 :host { display:block; }
 .users-page { --ink:#121c2a; --muted:#697586; --red:#a20d19; --line:#e6eaf1; padding:clamp(1rem,3vw,2rem); color:var(--ink); background:#f8f9ff; }
 
-/* Alinea el encabezado con la acción para el CRUD futuro. */
+/* Alinea el encabezado de la sección con el ancho del directorio. */
 .users-heading { display:flex; max-width:76rem; align-items:center; justify-content:space-between; gap:1rem; margin:0 auto 1.3rem; }
 .users-eyebrow { margin:0 0 .4rem; color:var(--red); font-size:.72rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
 .users-heading h1 { margin:0; font-size:clamp(1.6rem,3vw,2rem); }
 .users-heading>div>p:last-child { max-width:48rem; margin:.45rem 0 0; color:var(--muted); font-size:.85rem; line-height:1.55; }
-.add-user-button { display:inline-flex; min-height:2.7rem; flex:0 0 auto; align-items:center; gap:.4rem; padding:.6rem .85rem; color:#fff; background:var(--red); border:0; border-radius:.7rem; font:inherit; font-size:.8rem; font-weight:700; opacity:.72; }
 
 /* Presenta los totales calculados desde las cuentas de Firestore. */
 .users-stats { display:grid; max-width:76rem; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:0 auto 1.2rem; }
@@ -20,7 +19,7 @@
 .stat-card div>span { color:#8992a1; font-size:.72rem; }
 
 /* Agrupa filtros, resultados y paginación en una tarjeta. */
-.directory-card { max-width:76rem; margin:auto; overflow:hidden; background:#fff; border:1px solid var(--line); border-radius:1rem; }
+.directory-card { position:relative; max-width:76rem; margin:auto; background:#fff; border:1px solid var(--line); border-radius:1rem; }
 .role-tabs { display:flex; gap:1.1rem; overflow-x:auto; padding:0 1.2rem; border-bottom:1px solid var(--line); }
 .role-tab { display:inline-flex; min-height:3.2rem; flex:0 0 auto; align-items:center; gap:.4rem; padding:0 .1rem; color:#707b8b; background:transparent; border:0; border-bottom:2px solid transparent; cursor:pointer; font:inherit; font-size:.8rem; font-weight:600; }
 .role-tab-active { color:var(--red); border-bottom-color:var(--red); }
@@ -28,12 +27,10 @@
 
 /* Estiliza la búsqueda, filtro de departamento y actualización. */
 .directory-filters { display:flex; align-items:center; gap:.65rem; padding:1rem 1.2rem; }
-.search-control,.department-control { position:relative; display:flex; min-width:0; min-height:2.5rem; align-items:center; gap:.45rem; padding:0 .65rem; background:#f7f8fb; border:1px solid var(--line); border-radius:.65rem; }
+.search-control { position:relative; display:flex; min-width:0; min-height:2.5rem; align-items:center; gap:.45rem; padding:0 .65rem; background:#f7f8fb; border:1px solid var(--line); border-radius:.65rem; }
 .search-control { flex:1; }
 .search-control>.material-symbols-outlined { color:#838d9b; }
 .search-control input { width:100%; min-width:0; color:var(--ink); background:transparent; border:0; outline:0; font:inherit; font-size:.78rem; }
-.department-control select { min-width:10rem; appearance:none; padding:.35rem 1.25rem .35rem 0; color:#465164; background:transparent; border:0; outline:0; cursor:pointer; font:inherit; font-size:.77rem; }
-.department-control>.material-symbols-outlined { position:absolute; right:.4rem; color:#7b8594; pointer-events:none; }
 .refresh-button { display:inline-flex; min-height:2.5rem; flex:0 0 auto; align-items:center; gap:.3rem; padding:.4rem .6rem; color:#536073; background:#fff; border:1px solid var(--line); border-radius:.65rem; cursor:pointer; font:inherit; font-size:.75rem; }
 
 /* Mantiene visibles los errores y el progreso de lectura. */
@@ -41,7 +38,8 @@
 .directory-error { flex-wrap:wrap; background:#fff7f6; }
 .directory-error button { color:var(--red); background:transparent; border:0; cursor:pointer; font:inherit; font-weight:700; }
 .directory-loading { color:var(--muted); }
-.loading-spinner { width:1.1rem; height:1.1rem; border:2px solid var(--line); border-top-color:var(--red); border-radius:50%; }
+.loading-spinner { width:1.1rem; height:1.1rem; flex:0 0 auto; border:2px solid var(--line); border-top-color:var(--red); border-radius:50%; animation:users-loading-spin .75s linear infinite; }
+@keyframes users-loading-spin { to { transform:rotate(360deg); } }
 
 /* Conserva legibilidad tabular y permite desplazamiento horizontal en móvil. */
 .table-scroll { overflow-x:auto; }
@@ -71,7 +69,7 @@
 .pagination-buttons button { display:grid; width:1.85rem; height:1.85rem; place-items:center; color:#536073; background:#fff; border:1px solid var(--line); border-radius:.5rem; cursor:pointer; }
 .pagination-buttons button:disabled { opacity:.4; }
 
-/* Presenta los detalles de la cuenta en un diálogo adaptable de solo lectura. */
+/* Presenta los detalles y opciones de rol en un diálogo adaptable. */
 .details-backdrop { position:fixed; z-index:100; inset:0; display:grid; place-items:center; padding:1rem; background:rgba(18,28,42,.42); }
 .details-dialog { width:min(100%,30rem); padding:1.2rem; background:#fff; border-radius:1rem; box-shadow:0 20px 60px rgba(18,28,42,.2); }
 .details-dialog-header,.details-identity { display:flex; align-items:center; gap:.8rem; }
@@ -87,17 +85,16 @@
 .details-fields>div { padding:.65rem .75rem; background:#f8f9fc; border-radius:.6rem; }
 .details-fields dt { margin-bottom:.2rem; color:#7b8594; font-size:.68rem; }
 .details-fields dd { margin:0; overflow-wrap:anywhere; font-size:.82rem; font-weight:600; }
+.role-change-notice { margin:.7rem 0 0; color:var(--muted); font-size:.75rem; line-height:1.5; }
 .details-dialog-footer { display:flex; justify-content:flex-end; margin-top:1rem; }
 .details-dialog-footer button { padding:.55rem .9rem; color:#fff; background:var(--red); border:0; border-radius:.6rem; cursor:pointer; font:inherit; font-size:.8rem; }
 
 /* Ajusta tarjetas, filtros y paginación en pantallas compactas. */
 @media (max-width:700px) {
   .users-heading { align-items:flex-start; flex-direction:column; }
-  .add-user-button { align-self:stretch; justify-content:center; }
   .users-stats { gap:.6rem; }
   .stat-card { gap:.5rem; padding:.75rem; }
   .stat-icon { width:2.3rem; height:2.3rem; }
   .directory-filters { align-items:stretch; flex-direction:column; }
-  .department-control select { width:100%; }
   .table-pagination { flex-wrap:wrap; justify-content:center; }
 }

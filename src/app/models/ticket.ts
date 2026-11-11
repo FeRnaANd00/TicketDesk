@@ -25,6 +25,8 @@ export interface TicketAttachment {
 export interface Ticket {
   /** Identificador único generado por Firestore. */
   id?: string;
+  /** Número secuencial global asignado al ticket al momento de crearlo. */
+  numero?: number;
   /** Título corto y descriptivo de la incidencia. */
   titulo: string;
   /** Descripción detallada del problema reportado. */

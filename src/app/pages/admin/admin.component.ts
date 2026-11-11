@@ -1,34 +1,38 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../core/firebase.config';
+import { auth, db } from '../../core/firebase.config';
 import {
   AdminUsersService,
-  CreateManagedUserRequest,
   ManagedUser,
-  ManagedUserRole,
-  UpdateManagedUserRequest
+  ManagedUserRole
 } from '../../services/admin-users.service';
 
 /** Filtros disponibles para las pestañas de resumen del directorio. */
 type UserFilter = 'all' | 'user' | 'technician' | 'admin';
-/** Estados del diálogo compartido por alta, consulta y edición. */
-type UserDialogMode = 'create' | 'details' | 'edit';
+/** Estados del diálogo de consulta y cambio de rol. */
+type UserDialogMode = 'details' | 'edit-role';
 
-/** Valores capturados en el formulario de una cuenta. */
+/** Tiempo máximo que la pantalla espera una respuesta de Firestore. */
+const USERS_LOAD_TIMEOUT_MS = 15000;
+
+/** Rol seleccionado en el formulario de administración. */
 interface UserForm {
-  email: string;
-  password: string;
-  username: string;
-  department: string;
-  phone: string;
   role: ManagedUserRole;
+}
+
+/** Presentación del rol disponible en el selector personalizado. */
+interface RoleOption {
+  value: ManagedUserRole;
+  label: string;
+  description: string;
+  icon: string;
 }
 
 /**
  * Muestra los perfiles registrados, métricas calculadas desde Firestore,
- * filtros, paginación y operaciones CRUD delegadas a Firebase Functions.
+ * filtros, paginación y cambios de rol autorizados por las reglas de Firestore.
  */
 @Component({
   selector: 'app-admin',
@@ -50,21 +54,25 @@ export class AdminComponent implements OnInit {
   selectedDepartment = '';
   /** Filtro de rol activo en las pestañas de resumen. */
   activeFilter: UserFilter = 'all';
+  /** Controla la visibilidad del menú personalizado de departamentos. */
+  isDepartmentMenuOpen = false;
   /** Tamaños de página disponibles para la tabla. */
   readonly pageSizeOptions = [10, 20, 30];
   /** Cantidad de perfiles que se presentan por página. */
   pageSize = 10;
   /** Página actual, iniciada en la primera página del resultado filtrado. */
   currentPage = 1;
-  /** Perfil visible dentro del diálogo de alta, detalles o edición. */
+  /** Perfil visible dentro del diálogo de detalles o cambio de rol. */
   selectedUser: ManagedUser | null = null;
-  /** Modo activo de la ventana CRUD. */
+  /** Modo activo del diálogo de perfil. */
   dialogMode: UserDialogMode = 'details';
-  /** Datos del formulario de alta o edición. */
+  /** Rol seleccionado en el formulario de cambio. */
   userForm: UserForm = this.createEmptyForm();
-  /** Error de validación o respuesta de las operaciones CRUD. */
+  /** Controla la visibilidad del menú personalizado de roles. */
+  isRoleMenuOpen = false;
+  /** Error de validación o respuesta de la actualización del rol. */
   dialogError = '';
-  /** Indica que una operación de alta, edición o eliminación está en curso. */
+  /** Indica que el cambio de rol está en curso. */
   isSavingUser = false;
   /** Filtros de rol con etiquetas y conteos derivados de cuentas reales. */
   readonly roleFilters: Array<{ key: UserFilter; label: string }> = [
@@ -72,6 +80,27 @@ export class AdminComponent implements OnInit {
     { key: 'user', label: 'Usuarios' },
     { key: 'technician', label: 'Técnicos' },
     { key: 'admin', label: 'Administradores' }
+  ];
+  /** Opciones visuales que puede elegir el administrador para el perfil. */
+  readonly roleOptions: RoleOption[] = [
+    {
+      value: 'user',
+      label: 'Usuario',
+      description: 'Acceso a tickets y perfil personal.',
+      icon: 'person'
+    },
+    {
+      value: 'technician',
+      label: 'Técnico',
+      description: 'Acceso al panel técnico y asignación de tickets.',
+      icon: 'support_agent'
+    },
+    {
+      value: 'admin',
+      label: 'Administrador',
+      description: 'Acceso a la administración del sistema.',
+      icon: 'admin_panel_settings'
+    }
   ];
 
   /** Carga los perfiles registrados al abrir la sección de administración. */
@@ -85,7 +114,11 @@ export class AdminComponent implements OnInit {
     this.loadError = '';
 
     try {
-      const snapshot = await getDocs(collection(db, 'users'));
+      const snapshot = await this.withTimeout(
+        getDocs(collection(db, 'users')),
+        USERS_LOAD_TIMEOUT_MS,
+        'La consulta de usuarios tardó demasiado. Comprueba tu conexión e inténtalo de nuevo.'
+      );
       this.users = snapshot.docs.map((userDocument) => {
         const data = userDocument.data();
         const storedRole = data['role'];
@@ -110,11 +143,33 @@ export class AdminComponent implements OnInit {
       );
     } finally {
       this.isLoading = false;
+      this.changeDetector.markForCheck();
     }
   }
 
-  /** Recibe el servicio que valida permisos y ejecuta operaciones de cuentas. */
-  constructor(private adminUsersService: AdminUsersService) {}
+  /** Recibe los servicios de persistencia y actualización de la vista. */
+  constructor(
+    private adminUsersService: AdminUsersService,
+    private changeDetector: ChangeDetectorRef
+  ) {}
+
+  /** Evita que una consulta pendiente mantenga indefinidamente el indicador de carga. */
+  private async withTimeout<T>(promise: Promise<T>, milliseconds: number, message: string): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error(message)), milliseconds);
+        })
+      ]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
 
   /** Devuelve un mensaje útil para errores callable sin ocultar fallos desconocidos. */
   private errorMessage(error: unknown, fallback: string): string {
@@ -129,14 +184,9 @@ export class AdminComponent implements OnInit {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  /** Genera un formulario limpio para una cuenta nueva. */
+  /** Genera el estado inicial del selector de rol. */
   private createEmptyForm(): UserForm {
     return {
-      email: '',
-      password: '',
-      username: '',
-      department: '',
-      phone: '',
       role: 'user'
     };
   }
@@ -203,9 +253,42 @@ export class AdminComponent implements OnInit {
     this.currentPage = 1;
   }
 
+  /** Limpia filtros de tabla para volver a mostrar el directorio completo. */
+  private resetDirectoryFilters(): void {
+    this.activeFilter = 'all';
+    this.searchTerm = '';
+    this.selectedDepartment = '';
+    this.currentPage = 1;
+  }
+
   /** Reinicia la página cuando cambia cualquiera de los filtros de tabla. */
   resetPagination(): void {
     this.currentPage = 1;
+  }
+
+  /** Selecciona un departamento y reinicia la tabla en su primera página. */
+  selectDepartment(department: string): void {
+    this.selectedDepartment = department;
+    this.currentPage = 1;
+    this.isDepartmentMenuOpen = false;
+  }
+
+  /** Alterna el menú personalizado de departamentos. */
+  toggleDepartmentMenu(): void {
+    this.isDepartmentMenuOpen = !this.isDepartmentMenuOpen;
+  }
+
+  /** Cierra los selectores personalizados al pulsar fuera de ellos. */
+  @HostListener('document:click', ['$event'])
+  closeMenusOnOutsideClick(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('.department-dropdown')) {
+      this.isDepartmentMenuOpen = false;
+    }
+
+    if (!(target instanceof Element) || !target.closest('.role-picker')) {
+      this.isRoleMenuOpen = false;
+    }
   }
 
   /** Cambia la cantidad de filas y conserva una página válida. */
@@ -231,137 +314,102 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  /** Abre el diálogo vacío para crear una cuenta con credenciales iniciales. */
-  openCreateDialog(): void {
-    this.selectedUser = null;
-    this.dialogMode = 'create';
-    this.dialogError = '';
-    this.userForm = this.createEmptyForm();
-  }
-
-  /** Abre los detalles de solo lectura del perfil elegido. */
+  /** Abre los detalles del perfil elegido. */
   showDetails(user: ManagedUser): void {
     this.selectedUser = user;
     this.dialogMode = 'details';
     this.dialogError = '';
   }
 
-  /** Habilita la edición de nombre, departamento, teléfono y rol. */
+  /** Indica si el administrador puede asignar un rol al perfil seleccionado. */
+  canChangeRole(user: ManagedUser | null): boolean {
+    return !!user && user.uid !== auth.currentUser?.uid && user.role !== 'admin';
+  }
+
+  /** Abre el selector de rol para una cuenta distinta a la sesión actual. */
   beginEdit(): void {
-    if (!this.selectedUser) {
+    if (!this.selectedUser || !this.canChangeRole(this.selectedUser)) {
       return;
     }
 
-    this.dialogMode = 'edit';
+    this.dialogMode = 'edit-role';
     this.dialogError = '';
-    this.userForm = {
-      email: this.selectedUser.email,
-      password: '',
-      username: this.selectedUser.username,
-      department: this.selectedUser.department === 'Sin departamento'
-        ? ''
-        : this.selectedUser.department,
-      phone: this.selectedUser.phone,
-      role: this.selectedUser.role
-    };
+    this.userForm = { role: this.selectedUser.role };
+    this.isRoleMenuOpen = false;
   }
 
-  /** Descarta el formulario y vuelve a los detalles o cierra el alta nueva. */
+  /** Alterna la apertura del selector personalizado de roles. */
+  toggleRoleMenu(): void {
+    this.isRoleMenuOpen = !this.isRoleMenuOpen;
+  }
+
+  /** Selecciona un rol disponible y cierra el menú. */
+  selectRole(role: ManagedUserRole): void {
+    this.userForm.role = role;
+    this.isRoleMenuOpen = false;
+  }
+
+  /** Devuelve el icono visual asociado al rol seleccionado. */
+  roleIcon(role: ManagedUserRole): string {
+    return this.roleOptions.find((option) => option.value === role)?.icon ?? 'person';
+  }
+
+  /** Cierra el selector personalizado al presionar Escape. */
+  @HostListener('document:keydown.escape')
+  closeRoleMenuOnEscape(): void {
+    this.isRoleMenuOpen = false;
+    this.isDepartmentMenuOpen = false;
+  }
+
+  /** Descarta el rol pendiente y vuelve a los detalles del perfil. */
   cancelDialogEdit(): void {
-    if (this.dialogMode === 'edit' && this.selectedUser) {
+    if (this.dialogMode === 'edit-role' && this.selectedUser) {
       this.showDetails(this.selectedUser);
       return;
     }
     this.closeDetails();
   }
 
-  /** Guarda una cuenta nueva o los cambios permitidos al perfil seleccionado. */
+  /** Guarda únicamente el rol y actualiza la lista después de confirmarlo en Firestore. */
   async saveUser(): Promise<void> {
     this.dialogError = '';
-    const email = this.userForm.email.trim().toLowerCase();
-    const username = this.userForm.username.trim();
-    const department = this.userForm.department.trim();
-    const phone = this.userForm.phone.trim();
-
-    if (!username || !department || !phone) {
-      this.dialogError = 'Nombre, departamento y teléfono son obligatorios.';
+    if (this.dialogMode !== 'edit-role' || !this.selectedUser || !this.canChangeRole(this.selectedUser)) {
       return;
     }
 
-    if (this.dialogMode === 'create' && (!email || !this.userForm.password)) {
-      this.dialogError = 'Correo y contraseña temporal son obligatorios para crear la cuenta.';
-      return;
-    }
-
-    if (this.dialogMode === 'create' && this.userForm.password.length < 6) {
-      this.dialogError = 'La contraseña temporal debe tener al menos 6 caracteres.';
+    const selectedUser = this.selectedUser;
+    const selectedRole = this.userForm.role;
+    if (selectedRole === 'user' && selectedUser.role !== 'user') {
+      this.dialogError = 'No se permite quitar roles elevados desde esta pantalla.';
       return;
     }
 
     this.isSavingUser = true;
     try {
-      if (this.dialogMode === 'create') {
-        const request: CreateManagedUserRequest = {
-          email,
-          password: this.userForm.password,
-          username,
-          department,
-          phone,
-          role: this.userForm.role
-        };
-        await this.adminUsersService.create(request);
-      } else if (this.dialogMode === 'edit' && this.selectedUser) {
-        const request: UpdateManagedUserRequest = {
-          uid: this.selectedUser.uid,
-          username,
-          department,
-          phone,
-          role: this.userForm.role
-        };
-        await this.adminUsersService.update(request);
+      if (selectedRole !== selectedUser.role) {
+        await this.adminUsersService.updateRole({
+          uid: selectedUser.uid,
+          username: selectedUser.username,
+          department: selectedUser.department,
+          role: selectedRole
+        });
+        this.users = this.users.map((user) => user.uid === selectedUser.uid
+          ? { ...user, role: selectedRole }
+          : user);
       }
 
+      this.resetDirectoryFilters();
       this.closeDetails();
       await this.loadUsers();
     } catch (error) {
-      console.error('Error al guardar la cuenta:', error);
+      console.error('Error al cambiar el rol del usuario:', error);
       this.dialogError = this.errorMessage(
         error,
-        'No se pudo guardar la cuenta. Verifica los datos y vuelve a intentar.'
+        'No se pudo cambiar el rol. Comprueba los permisos de Firestore e inténtalo de nuevo.'
       );
     } finally {
       this.isSavingUser = false;
-    }
-  }
-
-  /** Solicita confirmación y elimina la cuenta de Authentication y su perfil. */
-  async deleteSelectedUser(): Promise<void> {
-    if (!this.selectedUser || this.isSavingUser) {
-      return;
-    }
-
-    const user = this.selectedUser;
-    const confirmed = window.confirm(
-      `¿Eliminar la cuenta de ${user.username} (${user.email})? Esta acción no se puede deshacer.`
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    this.dialogError = '';
-    this.isSavingUser = true;
-    try {
-      await this.adminUsersService.delete(user.uid);
-      this.closeDetails();
-      await this.loadUsers();
-    } catch (error) {
-      console.error('Error al eliminar la cuenta:', error);
-      this.dialogError = this.errorMessage(
-        error,
-        'No se pudo eliminar la cuenta. Verifica los permisos e inténtalo de nuevo.'
-      );
-    } finally {
-      this.isSavingUser = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -371,6 +419,7 @@ export class AdminComponent implements OnInit {
     this.dialogMode = 'details';
     this.dialogError = '';
     this.userForm = this.createEmptyForm();
+    this.isRoleMenuOpen = false;
   }
 
   /** Convierte el identificador de rol en el nombre mostrado en la interfaz. */

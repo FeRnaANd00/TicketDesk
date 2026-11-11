@@ -53,8 +53,7 @@ body {
   font-weight: 700;
 }
 
-.users-page .user-edit-form input,
-.users-page .user-edit-form select {
+.users-page .user-edit-form input {
   width: 100%;
   min-width: 0;
   padding: .65rem .7rem;
@@ -67,10 +66,284 @@ body {
   font-size: .8rem;
 }
 
-.users-page .user-edit-form input:focus,
-.users-page .user-edit-form select:focus {
+.users-page .user-edit-form input:focus {
   border-color: #a20d19;
   box-shadow: 0 0 0 2px rgba(162, 13, 25, .1);
+}
+
+/* Mantiene la etiqueta del selector de rol alineada con los campos del formulario. */
+.users-page .role-picker-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .35rem;
+  color: #536073;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+/* Ancla el panel desplegable al botón que muestra el rol actual. */
+.users-page .role-picker {
+  position: relative;
+}
+
+/* Imita el tono del botón de cierre de sesión en el control de selección. */
+.users-page .role-picker-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .65rem .75rem;
+  color: #9c0a18;
+  background: #fff4f3;
+  border: 1px solid #bb01121a;
+  border-radius: .7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  text-align: left;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+/* Resalta el selector abierto y evita el foco azul predeterminado del navegador. */
+.users-page .role-picker-trigger:hover,
+.users-page .role-picker-trigger[aria-expanded="true"] {
+  color: #fff;
+  background: #bb0112;
+  border-color: #bb0112;
+}
+
+.users-page .role-picker-trigger:focus-visible,
+.users-page .role-picker-option:focus-visible {
+  outline: 3px solid rgba(187, 1, 18, .24);
+  outline-offset: 2px;
+}
+
+.users-page .role-picker-current {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.users-page .role-picker-chevron {
+  transition: transform .18s ease;
+}
+
+.users-page .role-picker-chevron-open {
+  transform: rotate(180deg);
+}
+
+/* Presenta las alternativas en un panel propio, sin el menú azul del select nativo. */
+.users-page .role-picker-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + .4rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: .25rem;
+  padding: .4rem;
+  background: #fff;
+  border: 1px solid #e6eaf1;
+  border-radius: .8rem;
+  box-shadow: 0 14px 32px rgba(18, 28, 42, .16);
+}
+
+/* Da a cada rol su propia fila, icono, descripción y estado seleccionado. */
+.users-page .role-picker-option {
+  display: flex;
+  width: 100%;
+  min-height: 3.5rem;
+  align-items: center;
+  gap: .65rem;
+  padding: .55rem .6rem;
+  color: #27313f;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: .6rem;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+/* Sustituye el hover azul por el color tenue del tema de TicketDesk. */
+.users-page .role-picker-option:hover:not(:disabled),
+.users-page .role-picker-option-selected {
+  background: #fff4f3;
+  border-color: #bb01121a;
+}
+
+.users-page .role-picker-option:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.users-page .role-picker-option-icon {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #9c0a18;
+  background: #fff0ef;
+  border-radius: .55rem;
+}
+
+.users-page .role-picker-option-copy {
+  display: grid;
+  flex: 1;
+  gap: .15rem;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.users-page .role-picker-option-copy small {
+  color: #7b8594;
+  font-size: .67rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.users-page .role-picker-option-check,
+.users-page .role-picker-option-lock {
+  flex: 0 0 auto;
+  color: #bb0112;
+  font-size: 1.1rem;
+}
+
+.users-page .role-picker-option-lock {
+  color: #929baa;
+}
+
+/* Mantiene el filtro de departamentos alineado al selector de roles personalizado. */
+.department-dropdown {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 16rem);
+}
+
+.department-filter-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .6rem .8rem;
+  color: #9c0a18;
+  background: #fff4f3;
+  border: 1px solid #bb01121a;
+  border-radius: .7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: .77rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.department-filter-trigger:hover,
+.department-filter-trigger[aria-expanded="true"] {
+  color: #fff;
+  background: #bb0112;
+  border-color: #bb0112;
+}
+
+.department-filter-chevron {
+  transition: transform .18s ease;
+}
+
+.department-filter-chevron-open {
+  transform: rotate(180deg);
+}
+
+.department-filter-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + .4rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: .2rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: .4rem;
+  background: #fff;
+  border: 1px solid #e6eaf1;
+  border-radius: .8rem;
+  box-shadow: 0 14px 32px rgba(18, 28, 42, .16);
+}
+
+.department-filter-option {
+  display: flex;
+  width: 100%;
+  min-height: 2.65rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .65rem;
+  color: #27313f;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: .6rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: .78rem;
+  text-align: left;
+}
+
+.department-filter-option:hover,
+.department-filter-option-active {
+  background: #fff4f3;
+  border-color: #bb01121a;
+}
+
+.department-filter-check {
+  color: #bb0112;
+}
+
+.tickets-page .ticket-edit-dropdown {
+  width: 100%;
+}
+
+.tickets-page .ticket-edit-field-open {
+  position: relative;
+  z-index: 30;
+}
+
+.tickets-page .ticket-dialog-dropdown-open {
+  overflow: visible;
+}
+
+.tickets-page .department-filter-trigger:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+@media (max-width: 700px) {
+  .users-page .department-dropdown {
+    width: 100%;
+  }
+}
+
+/* Estiliza la edición permitida y los errores visibles del diálogo de tickets. */
+.tickets-page .ticket-edit-form { display:grid; gap:.8rem; margin:1rem 0; }
+.tickets-page .ticket-edit-field { display:grid; gap:.35rem; color:#536073; font-size:.76rem; font-weight:700; }
+.tickets-page .ticket-edit-error { margin:0; }
+.tickets-page .ticket-edit-error,.tickets-page .ticket-edit-permission-error { color:#9c1b22; }
+.tickets-page .ticket-edit-permission-error { display:flex; align-items:center; gap:.55rem; margin:0 auto 1rem; padding:.75rem 1rem; background:#fff0ef; border-radius:.7rem; font-size:.82rem; }
+.tickets-page .ticket-retry-button { color:#9c0a18; background:transparent; border:0; cursor:pointer; font:inherit; font-weight:750; text-decoration:underline; }
+.tickets-page .ticket-dialog-actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1rem; }
+.tickets-page .ticket-dialog-actions button { display:inline-flex; min-height:2.6rem; align-items:center; justify-content:center; gap:.4rem; padding:.55rem .85rem; border:0; border-radius:.65rem; cursor:pointer; font:inherit; font-size:.8rem; font-weight:700; }
+.tickets-page .ticket-cancel-edit-button { color:#536073; background:#f3f5f8; }
+.tickets-page .ticket-save-edit-button { color:#fff; background:#a20d19; }
+
+/* Extiende el mensaje del cambio de rol a todo el ancho del formulario. */
+.users-page .role-change-notice {
+  grid-column: 1 / -1;
 }
 
 .users-page .user-edit-form input:disabled {

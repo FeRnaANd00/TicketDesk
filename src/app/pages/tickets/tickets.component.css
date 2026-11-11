@@ -1,0 +1,99 @@
+/* Define la superficie base de la pantalla y su paleta compartida. */
+:host { display:block; }
+.tickets-page { --ink:#121c2a; --muted:#667085; --red:#a20d19; --line:#e6eaf1; width:min(100%,96rem); margin:0 auto; padding:clamp(1rem,3vw,2.5rem); color:var(--ink); }
+
+/* Alinea el encabezado con la acción para registrar una incidencia nueva. */
+.tickets-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; }
+.tickets-eyebrow { margin:0 0 .35rem; color:var(--red); font-size:.72rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+.tickets-heading h1 { margin:0; font-size:clamp(1.7rem,4vw,2.25rem); letter-spacing:-.04em; }
+.tickets-heading p:last-child { margin:.5rem 0 0; color:var(--muted); line-height:1.55; }
+.create-ticket-button,.secondary-button { display:inline-flex; min-height:2.7rem; align-items:center; justify-content:center; gap:.45rem; padding:.65rem .95rem; color:#fff; background:var(--red); border:0; border-radius:.75rem; cursor:pointer; font:inherit; font-size:.84rem; font-weight:750; text-decoration:none; transition:background-color .15s ease,transform .15s ease; }
+.create-ticket-button:hover,.secondary-button:hover { background:#820b14; transform:translateY(-1px); }
+.create-ticket-button .material-symbols-outlined { font-size:1.15rem; }
+
+/* Destaca el conteo de tickets abiertos antes de los controles de búsqueda. */
+.active-summary { display:flex; min-height:6.25rem; align-items:center; gap:.9rem; margin-bottom:1.25rem; padding:1rem 1.2rem; background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
+.summary-icon { display:grid; width:2.9rem; height:2.9rem; flex:0 0 auto; place-items:center; color:var(--red); background:#fff1f0; border-radius:.85rem; font-size:1.5rem; }
+.active-summary p { margin:0; color:var(--muted); font-size:.8rem; font-weight:650; }
+.active-summary strong { display:block; margin-top:.15rem; font-size:1.55rem; line-height:1.15; }
+.summary-caption { margin-left:auto; color:#8791a1; font-size:.76rem; }
+
+/* Contiene controles y tabla, adaptando el ancho sin ocultar columnas. */
+.tickets-list-card { background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
+.list-toolbar { position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:1rem; border-bottom:1px solid var(--line); }
+.search-control { display:flex; min-height:2.75rem; align-items:center; gap:.55rem; color:#7b8493; background:#f7f8fb; border:1px solid #e8ebf1; border-radius:.7rem; }
+.search-control { width:min(100%,34rem); padding:0 .75rem; }
+.search-control .material-symbols-outlined { font-size:1.2rem; }
+.search-control input { width:100%; min-width:0; color:var(--ink); background:transparent; border:0; outline:0; font:inherit; font-size:.82rem; }
+.search-control:focus-within { border-color:rgba(162,13,25,.45); box-shadow:0 0 0 3px rgba(162,13,25,.08); }
+.status-dropdown { position:relative; z-index:3; width:min(100%,13rem); }
+.status-filter-trigger { display:flex; width:100%; align-items:center; justify-content:space-between; padding:.75rem .85rem; color:#9c0a18; background:#fff4f3; border:1px solid rgba(187,1,18,.16); border-radius:.85rem; cursor:pointer; font:inherit; font-size:.82rem; font-weight:700; text-align:left; }
+.status-filter-trigger:hover,.status-filter-trigger[aria-expanded=true] { color:#fff; background:#bb0112; border-color:#bb0112; }
+.status-filter-options { position:absolute; z-index:30; top:calc(100% + .4rem); right:0; left:0; display:grid; gap:.2rem; padding:.5rem; background:#fff; border:1px solid #e6eaf1; border-radius:.85rem; box-shadow:0 14px 32px rgba(18,28,42,.16); }
+.status-filter-option { display:flex; width:100%; min-height:2.9rem; align-items:center; justify-content:space-between; padding:.75rem; color:#27313f; background:#fff; border:0; border-radius:.65rem; cursor:pointer; font:inherit; font-size:.82rem; text-align:left; }
+.status-filter-option:hover,.status-filter-option-active { color:#9c0a18; background:#fff4f3; }
+.visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); clip-path:inset(50%); white-space:nowrap; }
+
+/* Presenta carga, error y resultados vacíos con mensajes distinguibles. */
+.list-state { display:flex; min-height:15rem; flex-direction:column; align-items:center; justify-content:center; gap:.55rem; padding:2rem 1.25rem; color:#778293; text-align:center; }
+.list-state>.material-symbols-outlined { color:#aab2bf; font-size:2.25rem; }
+.list-state h2 { margin:.25rem 0 0; color:var(--ink); font-size:1.05rem; }
+.list-state p { max-width:32rem; margin:0; font-size:.84rem; line-height:1.55; }
+.list-state .secondary-button { margin-top:.4rem; }
+.list-error>.material-symbols-outlined { color:var(--red); }
+.list-error p { color:#9c1b22; }
+.loading-spinner { width:2rem; height:2rem; border:3px solid #f4d8da; border-top-color:var(--red); border-radius:50%; animation:ticket-spin .8s linear infinite; }
+@keyframes ticket-spin { to { transform:rotate(360deg); } }
+
+/* Mantiene todas las columnas consultables y destaca estado y prioridad. */
+.table-scroll { overflow-x:auto; }
+.tickets-table { width:100%; border-collapse:collapse; text-align:left; }
+.tickets-table th { padding:.85rem .75rem; color:#697386; background:#fafbfc; border-bottom:1px solid var(--line); font-size:.69rem; font-weight:750; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.tickets-table td { padding:.9rem .75rem; border-bottom:1px solid #eef0f4; color:#3e4858; font-size:.78rem; vertical-align:middle; }
+.tickets-table tbody tr:last-child td { border-bottom:0; }
+.tickets-table tbody tr:hover { background:#fcfcfd; }
+.ticket-number { color:#8d101b!important; font-size:.74rem!important; font-weight:800; white-space:nowrap; }
+.ticket-title-cell { min-width:13rem; max-width:20rem; }
+.ticket-title-cell strong,.ticket-title-cell span { display:block; }
+.ticket-title-cell strong { overflow:hidden; color:var(--ink); text-overflow:ellipsis; white-space:nowrap; }
+.ticket-title-cell span { display:-webkit-box; overflow:hidden; margin-top:.25rem; color:#8590a0; font-size:.7rem; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.ticket-date { min-width:9rem; white-space:nowrap; }
+.priority-badge,.status-badge { display:inline-flex; min-height:1.55rem; align-items:center; padding:.25rem .52rem; border-radius:99px; font-size:.68rem; font-weight:750; white-space:nowrap; }
+.priority-urgente { color:#a4131c; background:#ffeded; }
+.priority-alta { color:#a54b00; background:#fff2df; }
+.priority-media { color:#876000; background:#fff8d9; }
+.priority-baja { color:#425e7e; background:#edf4fc; }
+.status-nuevo { color:#345c94; background:#edf4ff; }
+.status-asignado { color:#876000; background:#fff6d8; }
+.status-cerrado { color:#426b58; background:#e9f6ef; }
+.view-ticket-button { display:inline-flex; align-items:center; gap:.25rem; padding:.4rem .55rem; color:var(--red); background:transparent; border:0; border-radius:.5rem; cursor:pointer; font:inherit; font-size:.75rem; font-weight:750; white-space:nowrap; }
+.view-ticket-button:hover { background:#fff1f0; }
+.view-ticket-button .material-symbols-outlined { font-size:1rem; }
+
+/* Presenta el detalle de una fila sobre la pantalla sin navegar fuera de Tickets. */
+.ticket-dialog-backdrop { position:fixed; z-index:1000; inset:0; display:grid; place-items:center; padding:1rem; background:rgba(15,23,42,.48); }
+.ticket-dialog { width:min(100%,42rem); max-height:min(90vh,48rem); overflow:auto; padding:1.4rem; background:#fff; border:1px solid rgba(255,255,255,.7); border-radius:1.1rem; box-shadow:0 24px 70px rgba(15,23,42,.24); }
+.dialog-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding-bottom:1rem; border-bottom:1px solid var(--line); }
+.dialog-heading h2 { margin:0; font-size:1.25rem; line-height:1.35; }
+.dialog-close-button { display:grid; width:2.25rem; height:2.25rem; flex:0 0 auto; place-items:center; color:#5f6876; background:#f3f5f8; border:0; border-radius:.65rem; cursor:pointer; }
+.ticket-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:1.1rem 0; }
+.ticket-detail-grid div { min-width:0; }
+.ticket-detail-grid dt { color:#7c8796; font-size:.72rem; font-weight:650; }
+.ticket-detail-grid dd { margin:.25rem 0 0; color:var(--ink); font-size:.84rem; font-weight:700; overflow-wrap:anywhere; }
+.ticket-description { padding:1rem; background:#f7f8fb; border-radius:.75rem; }
+.ticket-description h3 { margin:0 0 .45rem; font-size:.83rem; }
+.ticket-description p { margin:0; color:#4e5969; font-size:.83rem; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+
+/* Reorganiza filtros y detalles para pantallas pequeñas. */
+@media (max-width:760px) {
+  .tickets-heading { align-items:flex-start; }
+  .create-ticket-button { flex:0 0 auto; }
+  .summary-caption { display:none; }
+}
+@media (max-width:540px) {
+  .tickets-heading { flex-direction:column; }
+  .list-toolbar { align-items:stretch; flex-direction:column; }
+  .search-control,.status-dropdown { width:100%; }
+  .ticket-dialog { padding:1rem; }
+  .ticket-detail-grid { grid-template-columns:1fr; gap:.75rem; }
+}

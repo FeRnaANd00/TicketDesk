@@ -1,20 +1,18 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
-import { deleteObject, ref, uploadBytes, StorageReference } from 'firebase/storage';
-import { auth, db, storage } from '../../core/firebase.config';
+import { collection, doc, getDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../../core/firebase.config';
 import {
   Ticket,
-  TicketAttachment,
   TicketCategory,
   TicketPriority
 } from '../../models/ticket';
 import { TicketsService } from '../../services/tickets';
 
-/** Límite acumulado de todos los archivos seleccionados en un ticket. */
-const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
+/** Identifica cuál de los menús personalizados está abierto. */
+type TicketDropdown = 'category' | 'technician' | null;
 
 /** Representa un técnico disponible para recibir tickets. */
 interface TechnicianOption {
@@ -23,13 +21,7 @@ interface TechnicianOption {
   department: string;
 }
 
-/** Conserva el archivo seleccionado junto con su vista previa temporal. */
-interface PendingAttachment {
-  file: File;
-  previewUrl: string;
-}
-
-/** Componente de formulario para crear tickets y cargar sus archivos adjuntos. */
+/** Componente de formulario para crear tickets y asignarlos a técnicos disponibles. */
 @Component({
   selector: 'app-new-ticket',
   standalone: true,
@@ -37,7 +29,7 @@ interface PendingAttachment {
   templateUrl: './new-ticket.component.html',
   styleUrl: './new-ticket.component.css'
 })
-export class NewTicketComponent implements OnInit, OnDestroy {
+export class NewTicketComponent implements OnInit {
   /** Título breve de la incidencia con el límite de caracteres del formulario. */
   title = '';
   /** Categoría seleccionada para clasificar el problema. */
@@ -67,24 +59,20 @@ export class NewTicketComponent implements OnInit, OnDestroy {
   ];
   /** Técnicos que el administrador habilitó para recibir tickets. */
   technicians: TechnicianOption[] = [];
-  /** Archivos seleccionados y sus vistas previas temporales. */
-  attachments: PendingAttachment[] = [];
   /** Indica que se están cargando los perfiles técnicos. */
   isLoadingTechnicians = true;
   /** Indica que el formulario está guardando el ticket o sus archivos. */
   isSubmitting = false;
-  /** Estado visual de arrastre de archivos sobre el área de carga. */
-  isDragOver = false;
+  /** Menú personalizado abierto para categoría o técnico. */
+  openDropdown: TicketDropdown = null;
   /** Mensaje accesible cuando ocurre un problema al cargar técnicos. */
   technicianLoadError = '';
   /** Mensajes de validación o guardado visibles junto al formulario. */
   formError = '';
-  /** Identificador mostrado al confirmar que el ticket fue guardado. */
-  createdTicketId = '';
+  /** Número secuencial mostrado al confirmar que el ticket fue guardado. */
+  createdTicketNumber = '';
   /** Nombre de la persona que solicita el ticket, obtenido de su perfil. */
   private requesterName = 'Usuario';
-  /** Referencias de Storage para limpiar archivos si el envío falla. */
-  private uploadedStorageReferences: StorageReference[] = [];
 
   /** Recibe la navegación y el servicio centralizado de tickets. */
   constructor(
@@ -107,11 +95,6 @@ export class NewTicketComponent implements OnInit, OnDestroy {
       this.loadRequesterName(user.uid),
       this.loadTechnicians()
     ]);
-  }
-
-  /** Libera las vistas previas temporales al abandonar el formulario. */
-  ngOnDestroy(): void {
-    this.revokeAttachmentPreviews();
   }
 
   /** Consulta el nombre de perfil que quedará guardado como solicitante. */
@@ -161,87 +144,47 @@ export class NewTicketComponent implements OnInit, OnDestroy {
     this.priority = priority;
   }
 
-  /** Recibe archivos del selector y reinicia el control para admitir repetidos. */
-  onFilesSelected(event: Event): void {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || !input.files) {
-      return;
-    }
-
-    this.addFiles(Array.from(input.files));
-    input.value = '';
+  /** Alterna el menú personalizado para categoría o asignación técnica. */
+  toggleDropdown(dropdown: Exclude<TicketDropdown, null>): void {
+    this.openDropdown = this.openDropdown === dropdown ? null : dropdown;
   }
 
-  /** Habilita la zona de carga cuando se arrastran archivos sobre ella. */
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    this.isDragOver = true;
-  }
-
-  /** Restablece el estilo de la zona cuando el puntero deja de arrastrar. */
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    this.isDragOver = false;
-  }
-
-  /** Agrega al formulario los archivos soltados sobre el área de carga. */
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
-    this.isDragOver = false;
-    if (event.dataTransfer?.files) {
-      this.addFiles(Array.from(event.dataTransfer.files));
+  /** Cierra ambos menús cuando se hace clic fuera de sus controles. */
+  @HostListener('document:click', ['$event'])
+  closeDropdownsOnOutsideClick(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('.ticket-select-control')) {
+      this.openDropdown = null;
     }
   }
 
-  /** Valida el tipo y el límite total antes de conservar los archivos elegidos. */
-  private addFiles(files: File[]): void {
-    this.formError = '';
-    const allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'heic', 'heif', 'log', 'txt'];
-    const isAllowed = files.every((file) => {
-      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-      return allowedExtensions.includes(extension);
-    });
-
-    if (!isAllowed) {
-      this.formError = 'Solo se permiten archivos PDF, imágenes PNG/JPG/HEIC y archivos LOG o TXT.';
-      return;
-    }
-
-    const currentSize = this.attachments.reduce((total, item) => total + item.file.size, 0);
-    const incomingSize = files.reduce((total, file) => total + file.size, 0);
-    if (currentSize + incomingSize > MAX_ATTACHMENT_SIZE) {
-      this.formError = 'El tamaño combinado de los archivos no puede superar 25 MB.';
-      return;
-    }
-
-    this.attachments = [
-      ...this.attachments,
-      ...files.map((file) => ({
-        file,
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
-      }))
-    ];
+  /** Cierra el menú activo cuando se presiona Escape. */
+  @HostListener('document:keydown.escape')
+  closeDropdownsOnEscape(): void {
+    this.openDropdown = null;
   }
 
-  /** Quita un archivo seleccionado y libera su URL de vista previa. */
-  removeAttachment(index: number): void {
-    const [removed] = this.attachments.splice(index, 1);
-    if (removed?.previewUrl) {
-      URL.revokeObjectURL(removed.previewUrl);
-    }
-    this.attachments = [...this.attachments];
+  /** Selecciona una categoría y cierra su menú. */
+  selectCategory(category: TicketCategory): void {
+    this.category = category;
+    this.openDropdown = null;
   }
 
-  /** Devuelve el tamaño seleccionado en una unidad legible para la pantalla. */
-  get attachmentSizeLabel(): string {
-    const total = this.attachments.reduce((size, item) => size + item.file.size, 0);
-    return `${(total / (1024 * 1024)).toFixed(1)} MB de 25 MB`;
+  /** Selecciona un técnico o limpia la asignación del ticket. */
+  selectTechnician(uid: string): void {
+    this.selectedTechnicianId = uid;
+    this.openDropdown = null;
   }
 
-  /** Comprueba el formulario y guarda el ticket con sus adjuntos opcionales. */
+  /** Devuelve la ficha del técnico actualmente elegido, si está disponible. */
+  get selectedTechnician(): TechnicianOption | null {
+    return this.technicians.find((technician) => technician.uid === this.selectedTechnicianId) ?? null;
+  }
+
+  /** Comprueba el formulario y guarda el ticket sin depender de almacenamiento de archivos. */
   async submitTicket(form: NgForm): Promise<void> {
     this.formError = '';
-    this.createdTicketId = '';
+    this.createdTicketNumber = '';
     const category = this.category;
 
     if (!form.valid || !this.title.trim() || !category || !this.description.trim()) {
@@ -257,8 +200,7 @@ export class NewTicketComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    this.uploadedStorageReferences = [];
-    let createdTicketId = '';
+    let createdTicketDocumentId = '';
 
     try {
       const technician = await this.getSelectedTechnician();
@@ -280,31 +222,23 @@ export class NewTicketComponent implements OnInit, OnDestroy {
         adjuntos: []
       };
 
-      createdTicketId = await this.ticketsService.crear(ticket);
-      const uploadedAttachments = await this.uploadAttachments(user.uid, createdTicketId);
-      if (uploadedAttachments.length > 0) {
-        await setDoc(
-          doc(db, 'tickets', createdTicketId),
-          { adjuntos: uploadedAttachments },
-          { merge: true }
-        );
-      }
+      const createdTicket = await this.ticketsService.crear(ticket);
+      createdTicketDocumentId = createdTicket.id;
 
-      this.createdTicketId = createdTicketId;
+      this.createdTicketNumber = this.formatTicketNumber(createdTicket.numero);
       this.title = '';
       this.category = '';
       this.priority = 'media';
       this.description = '';
       this.selectedTechnicianId = '';
-      this.revokeAttachmentPreviews();
+      this.openDropdown = null;
       form.resetForm();
     } catch (error) {
       console.error('Error al crear el ticket:', error);
-      await this.cleanupFailedSubmission(createdTicketId);
+      await this.cleanupFailedSubmission(createdTicketDocumentId);
       this.formError = 'No se pudo enviar el ticket. Revisa la conexión y los permisos de Firebase e inténtalo de nuevo.';
     } finally {
       this.isSubmitting = false;
-      this.uploadedStorageReferences = [];
     }
   }
 
@@ -333,43 +267,8 @@ export class NewTicketComponent implements OnInit, OnDestroy {
     };
   }
 
-  /** Sube los archivos y devuelve sus metadatos para guardarlos en Firestore. */
-  private async uploadAttachments(
-    uid: string,
-    ticketId: string
-  ): Promise<TicketAttachment[]> {
-    const uploaded: TicketAttachment[] = [];
-
-    for (const [index, attachment] of this.attachments.entries()) {
-      const safeName = attachment.file.name.replace(/[\\/#?]/g, '_');
-      const path = `tickets/${uid}/${ticketId}/${index}-${safeName}`;
-      const storageReference = ref(storage, path);
-
-      await uploadBytes(storageReference, attachment.file, {
-        contentType: attachment.file.type || 'application/octet-stream'
-      });
-      this.uploadedStorageReferences.push(storageReference);
-
-      uploaded.push({
-        nombre: attachment.file.name,
-        tipo: attachment.file.type || 'application/octet-stream',
-        tamano: attachment.file.size,
-        ruta: path
-      });
-    }
-
-    return uploaded;
-  }
-
-  /** Elimina archivos y documento creados si falla una parte del envío. */
+  /** Elimina el documento del ticket si falla una operación posterior a su creación. */
   private async cleanupFailedSubmission(ticketId: string): Promise<void> {
-    const cleanupResults = await Promise.allSettled(
-      this.uploadedStorageReferences.map((storageReference) => deleteObject(storageReference))
-    );
-    cleanupResults
-      .filter((result) => result.status === 'rejected')
-      .forEach((result) => console.error('No se pudo limpiar un archivo temporal:', result.reason));
-
     if (ticketId) {
       try {
         await this.ticketsService.eliminar(ticketId);
@@ -379,18 +278,13 @@ export class NewTicketComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Da formato al número secuencial compartido por todos los perfiles. */
+  private formatTicketNumber(numero: number): string {
+    return `TKD-${String(numero).padStart(4, '0')}`;
+  }
+
   /** Cancela la captura y regresa al área de tickets. */
   cancel(): void {
     void this.router.navigate(['/tickets']);
-  }
-
-  /** Libera las URLs locales que representan las imágenes seleccionadas. */
-  private revokeAttachmentPreviews(): void {
-    this.attachments.forEach((attachment) => {
-      if (attachment.previewUrl) {
-        URL.revokeObjectURL(attachment.previewUrl);
-      }
-    });
-    this.attachments = [];
   }
 }

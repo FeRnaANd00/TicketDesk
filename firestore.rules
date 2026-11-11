@@ -9,8 +9,16 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid));
     }
 
+    function userDocumentAfterWrite(uid) {
+      return getAfter(/databases/$(database)/documents/users/$(uid));
+    }
+
     function isAdmin() {
       return signedIn() && userDocument(request.auth.uid).data.role == 'admin';
+    }
+
+    function isTechnician() {
+      return signedIn() && userDocument(request.auth.uid).data.role == 'technician';
     }
 
     match /users/{uid} {
@@ -24,18 +32,59 @@ service cloud.firestore {
           'uid', 'email', 'username', 'department', 'phone', 'role',
           'profileCompleted', 'createdAt'
         ]);
-      allow update: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['username', 'department', 'phone', 'profileCompleted']);
+      allow update: if signedIn() && (
+        (request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['username', 'department', 'phone', 'profileCompleted']))
+        || (isAdmin()
+          && request.auth.uid != uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+          && request.resource.data.role in ['admin', 'technician']
+          && (resource.data.role != 'admin' || request.resource.data.role == 'admin'))
+      );
       allow delete: if false;
     }
 
     match /technicianDirectory/{uid} {
       allow get, list: if signedIn();
-      allow create, update, delete: if false;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['uid', 'username', 'department'])
+        && request.resource.data.uid == uid
+        && userDocumentAfterWrite(uid).data.role == 'technician'
+        && request.resource.data.username == userDocumentAfterWrite(uid).data.username
+        && request.resource.data.department == userDocumentAfterWrite(uid).data.department;
+      allow delete: if isAdmin()
+        && userDocumentAfterWrite(uid).data.role != 'technician';
+    }
+
+    match /ticketCounters/{counterId} {
+      function pairedTicketMatches() {
+        let ticket = getAfter(
+          /databases/$(database)/documents/tickets/$(request.resource.data.lastTicketId)
+        );
+        return ticket.data.numero == request.resource.data.lastNumber
+          && ticket.data.clienteId == request.auth.uid;
+      }
+
+      allow get: if signedIn() && counterId == 'global';
+      allow list: if false;
+      allow create: if signedIn()
+        && counterId == 'global'
+        && request.resource.data.keys().hasOnly(['lastNumber', 'lastTicketId'])
+        && request.resource.data.lastNumber is int
+        && request.resource.data.lastNumber == 1
+        && request.resource.data.lastTicketId is string
+        && pairedTicketMatches();
+      allow update: if signedIn()
+        && counterId == 'global'
+        && request.resource.data.keys().hasOnly(['lastNumber', 'lastTicketId'])
+        && request.resource.data.lastNumber is int
+        && request.resource.data.lastNumber == resource.data.lastNumber + 1
+        && request.resource.data.lastTicketId is string
+        && pairedTicketMatches();
+      allow delete: if false;
     }
 
     match /tickets/{ticketId} {
@@ -47,10 +96,45 @@ service cloud.firestore {
         return signedIn() && resource.data.tecnicoAsignadoId == request.auth.uid;
       }
 
+      function hasValidSupportAssignment() {
+        return (
+          !('tecnicoAsignadoId' in request.resource.data.keys())
+          && !('tecnicoAsignadoNombre' in request.resource.data.keys())
+        ) || (
+          request.resource.data.tecnicoAsignadoId is string
+          && request.resource.data.tecnicoAsignadoNombre is string
+          && get(
+            /databases/$(database)/documents/technicianDirectory/$(request.resource.data.tecnicoAsignadoId)
+          ).data.uid == request.resource.data.tecnicoAsignadoId
+          && get(
+            /databases/$(database)/documents/technicianDirectory/$(request.resource.data.tecnicoAsignadoId)
+          ).data.username == request.resource.data.tecnicoAsignadoNombre
+        );
+      }
+
+      function isValidSupportEdit() {
+        return signedIn()
+          && (isAdmin()
+            || (isTechnician() && (isRequester() || isAssignedTechnician())))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'categoria', 'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'
+          ])
+          && request.resource.data.categoria in [
+            'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
+          ]
+          && request.resource.data.estado in ['abierto', 'en proceso', 'cerrado']
+          && hasValidSupportAssignment();
+      }
+
       allow get, list: if signedIn()
         && (isAdmin() || isRequester() || isAssignedTechnician());
       allow create: if signedIn()
         && request.resource.data.clienteId == request.auth.uid
+        && request.resource.data.numero is int
+        && request.resource.data.numero
+          == getAfter(/databases/$(database)/documents/ticketCounters/global).data.lastNumber
+        && getAfter(/databases/$(database)/documents/ticketCounters/global).data.lastTicketId
+          == ticketId
         && request.resource.data.estado == 'abierto'
         && request.resource.data.prioridad in ['baja', 'media', 'alta', 'urgente']
         && request.resource.data.categoria in [
@@ -59,10 +143,10 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'titulo', 'categoria', 'descripcion', 'estado', 'prioridad',
           'fechaCreacion', 'clienteId', 'clienteNombre',
-          'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'adjuntos'
+          'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'adjuntos', 'numero'
         ]);
       allow update: if signedIn() && (
-        isAdmin() || isAssignedTechnician()
+        isValidSupportEdit()
         || (isRequester()
           && resource.data.adjuntos.size() == 0
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adjuntos']))

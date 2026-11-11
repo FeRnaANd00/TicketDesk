@@ -41,8 +41,8 @@ export class WorkspaceSidebarComponent {
     { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard', exact: true, roles: ['admin', 'technician'] },
     { label: 'Tickets', icon: 'confirmation_number', route: '/tickets', exact: false, roles: ['admin', 'technician', 'user'] },
     { label: 'Perfil', icon: 'person', route: '/profile', exact: false, roles: ['admin', 'technician', 'user'] },
-    { label: 'Nuevo Ticket', icon: 'add_circle', route: '/new-ticket', exact: false, roles: ['admin', 'technician', 'user'] },
-    { label: 'Usuarios', icon: 'group', route: '/users', exact: false, roles: ['admin'] }
+    { label: 'Usuarios', icon: 'group', route: '/users', exact: false, roles: ['admin'] },
+    { label: 'Nuevo Ticket', icon: 'add_circle', route: '/new-ticket', exact: false, roles: ['admin', 'technician', 'user'] }
   ];
 
   /** Enlaces visibles para el rol actual, con usuarios como valor seguro inicial. */

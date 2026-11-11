@@ -8,11 +8,11 @@
   </header>
 
   <!-- Confirma el ticket creado y muestra su identificador de seguimiento. -->
-  <div *ngIf="createdTicketId" class="ticket-success" role="status">
+  <div *ngIf="createdTicketNumber" class="ticket-success" role="status">
     <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
     <div>
       <strong>Ticket enviado correctamente</strong>
-      <p>El identificador de tu ticket es <code>{{ createdTicketId }}</code>.</p>
+      <p>El identificador de tu ticket es <code>{{ createdTicketNumber }}</code>.</p>
     </div>
   </div>
 
@@ -53,18 +53,56 @@
       <!-- Permite elegir categoría y prioridad con controles adaptados al diseño. -->
       <div class="form-grid">
         <div class="form-field">
-          <label for="ticket-category">Categoría <span>*</span></label>
-          <div class="select-wrap">
-            <select
+          <label id="ticket-category-label">Categoría <span>*</span></label>
+          <select
+            class="form-validation-control"
+            name="category"
+            [(ngModel)]="category"
+            required
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            <option value="">Selecciona una categoría...</option>
+            <option *ngFor="let option of categories" [ngValue]="option">{{ option }}</option>
+          </select>
+          <div class="ticket-select-control">
+            <button
               id="ticket-category"
-              name="category"
-              [(ngModel)]="category"
-              required
+              class="ticket-select-trigger"
+              type="button"
+              aria-haspopup="listbox"
+              aria-labelledby="ticket-category-label"
+              [attr.aria-expanded]="openDropdown === 'category'"
+              aria-controls="ticket-category-options"
+              (click)="toggleDropdown('category')"
             >
-              <option value="" disabled>Selecciona una categoría...</option>
-              <option *ngFor="let option of categories" [ngValue]="option">{{ option }}</option>
-            </select>
-            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+              <span class="ticket-select-current">
+                <span class="material-symbols-outlined" aria-hidden="true">category</span>
+                <span>{{ category || 'Selecciona una categoría...' }}</span>
+              </span>
+              <span class="material-symbols-outlined ticket-select-chevron" [class.ticket-select-chevron-open]="openDropdown === 'category'" aria-hidden="true">expand_more</span>
+            </button>
+            <div
+              *ngIf="openDropdown === 'category'"
+              id="ticket-category-options"
+              class="ticket-select-options"
+              role="listbox"
+              aria-labelledby="ticket-category-label"
+            >
+              <button
+                *ngFor="let option of categories"
+                class="ticket-select-option"
+                [class.ticket-select-option-active]="category === option"
+                type="button"
+                role="option"
+                [attr.aria-selected]="category === option"
+                (click)="selectCategory(option)"
+              >
+                <span class="ticket-select-option-icon material-symbols-outlined" aria-hidden="true">category</span>
+                <span class="ticket-select-option-copy">{{ option }}</span>
+                <span *ngIf="category === option" class="material-symbols-outlined ticket-select-option-check" aria-hidden="true">check_circle</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -90,22 +128,66 @@
 
       <!-- Permite asignar opcionalmente el ticket a un técnico aprobado por un administrador. -->
       <div class="form-field">
-        <label for="ticket-technician">Asignar a un técnico <span class="optional-label">(Opcional)</span></label>
-        <div class="select-wrap">
-          <select
+        <label id="ticket-technician-label">
+          Asignar a un técnico <span class="optional-label">(Opcional)</span>
+        </label>
+        <div class="ticket-select-control">
+          <button
             id="ticket-technician"
-            name="technician"
-            [(ngModel)]="selectedTechnicianId"
+            class="ticket-select-trigger"
+            type="button"
+            aria-haspopup="listbox"
+            aria-labelledby="ticket-technician-label"
+            [attr.aria-expanded]="openDropdown === 'technician'"
+            aria-controls="ticket-technician-options"
             [disabled]="isLoadingTechnicians || technicians.length === 0"
+            (click)="toggleDropdown('technician')"
           >
-            <option value="">
-              {{ isLoadingTechnicians ? 'Cargando técnicos...' : 'Sin asignar' }}
-            </option>
-            <option *ngFor="let technician of technicians" [value]="technician.uid">
-              {{ technician.username }}{{ technician.department ? ' · ' + technician.department : '' }}
-            </option>
-          </select>
-          <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+            <span class="ticket-select-current">
+              <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>
+              <span>
+                {{ isLoadingTechnicians ? 'Cargando técnicos...' : selectedTechnician?.username || 'Sin asignar' }}
+                <small *ngIf="selectedTechnician?.department">{{ selectedTechnician?.department }}</small>
+              </span>
+            </span>
+            <span class="material-symbols-outlined ticket-select-chevron" [class.ticket-select-chevron-open]="openDropdown === 'technician'" aria-hidden="true">expand_more</span>
+          </button>
+          <div
+            *ngIf="openDropdown === 'technician'"
+            id="ticket-technician-options"
+            class="ticket-select-options"
+            role="listbox"
+            aria-labelledby="ticket-technician-label"
+          >
+            <button
+              class="ticket-select-option"
+              [class.ticket-select-option-active]="!selectedTechnicianId"
+              type="button"
+              role="option"
+              [attr.aria-selected]="!selectedTechnicianId"
+              (click)="selectTechnician('')"
+            >
+              <span class="ticket-select-option-icon material-symbols-outlined" aria-hidden="true">person_off</span>
+              <span class="ticket-select-option-copy">Sin asignar</span>
+              <span *ngIf="!selectedTechnicianId" class="material-symbols-outlined ticket-select-option-check" aria-hidden="true">check_circle</span>
+            </button>
+            <button
+              *ngFor="let technician of technicians"
+              class="ticket-select-option"
+              [class.ticket-select-option-active]="selectedTechnicianId === technician.uid"
+              type="button"
+              role="option"
+              [attr.aria-selected]="selectedTechnicianId === technician.uid"
+              (click)="selectTechnician(technician.uid)"
+            >
+              <span class="ticket-select-option-icon material-symbols-outlined" aria-hidden="true">support_agent</span>
+              <span class="ticket-select-option-copy">
+                <span>{{ technician.username }}</span>
+                <small *ngIf="technician.department">{{ technician.department }}</small>
+              </span>
+              <span *ngIf="selectedTechnicianId === technician.uid" class="material-symbols-outlined ticket-select-option-check" aria-hidden="true">check_circle</span>
+            </button>
+          </div>
         </div>
         <p *ngIf="technicianLoadError" class="field-note field-note-error">{{ technicianLoadError }}</p>
         <p *ngIf="!isLoadingTechnicians && !technicianLoadError && technicians.length === 0" class="field-note">
@@ -131,68 +213,6 @@
         <p *ngIf="descriptionControl.invalid && descriptionControl.touched" class="field-note field-note-error">
           La descripción es obligatoria.
         </p>
-      </div>
-
-      <!-- Permite seleccionar archivos o tomar fotos desde dispositivos móviles. -->
-      <div class="form-field">
-        <div class="attachment-heading">
-          <label>Archivos y capturas adjuntas <span class="optional-label">(Opcional)</span></label>
-          <span class="attachment-limit">Máximo combinado: 25 MB</span>
-        </div>
-        <div
-          class="attachment-dropzone"
-          [class.attachment-dropzone-active]="isDragOver"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event)"
-        >
-          <span class="upload-icon material-symbols-outlined" aria-hidden="true">cloud_upload</span>
-          <p>Arrastra tus archivos aquí o selecciónalos</p>
-          <div class="upload-actions">
-            <label class="upload-button">
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.heic,.heif,.log,.txt,application/pdf,image/*,text/plain"
-                multiple
-                (change)="onFilesSelected($event)"
-              />
-              <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
-              Seleccionar archivos
-            </label>
-            <label class="upload-button upload-button-secondary">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                (change)="onFilesSelected($event)"
-              />
-              <span class="material-symbols-outlined" aria-hidden="true">photo_camera</span>
-              Tomar foto
-            </label>
-          </div>
-          <span class="attachment-types">PDF, PNG, JPG, HEIC, LOG o TXT</span>
-        </div>
-
-        <!-- Lista los archivos elegidos y permite retirarlos antes de enviar el ticket. -->
-        <div *ngIf="attachments.length > 0" class="attachment-list">
-          <div *ngFor="let attachment of attachments; let index = index" class="attachment-item">
-            <img *ngIf="attachment.previewUrl" [src]="attachment.previewUrl" alt="" />
-            <span *ngIf="!attachment.previewUrl" class="material-symbols-outlined" aria-hidden="true">
-              {{ attachment.file.type === 'application/pdf' ? 'picture_as_pdf' : 'description' }}
-            </span>
-            <span class="attachment-name">{{ attachment.file.name }}</span>
-            <span class="attachment-file-size">{{ (attachment.file.size / 1024 / 1024).toFixed(1) }} MB</span>
-            <button
-              type="button"
-              class="remove-attachment"
-              [attr.aria-label]="'Quitar ' + attachment.file.name"
-              (click)="removeAttachment(index)"
-            >
-              <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            </button>
-          </div>
-          <p class="attachment-total">{{ attachmentSizeLabel }}</p>
-        </div>
       </div>
 
       <!-- Presenta cancelar y enviar; no ofrece guardar borradores. -->
@@ -221,7 +241,7 @@
       <ol>
         <li><span>1</span><p><strong>Sé específico con el título.</strong> Describe el problema en pocas palabras.</p></li>
         <li><span>2</span><p><strong>Detalla los pasos.</strong> Explica qué estabas haciendo cuando ocurrió.</p></li>
-        <li><span>3</span><p><strong>Adjunta evidencia.</strong> Una captura o mensaje de error puede ayudar.</p></li>
+        <li><span>3</span><p><strong>Incluye los mensajes de error.</strong> Copia el texto o código mostrado en pantalla.</p></li>
         <li><span>4</span><p><strong>Elige bien la prioridad.</strong> Reserva “Urgente” para interrupciones críticas.</p></li>
       </ol>
     </aside>

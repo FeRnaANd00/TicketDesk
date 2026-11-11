@@ -55,13 +55,10 @@ export const routes: Routes = [
         title: 'TicketDesk - Dashboard'
       },
       {
-        // Destino temporal del menú hasta implementar el listado de tickets.
+        // Lista los tickets creados por la persona autenticada.
         path: 'tickets',
-        component: SectionPlaceholderComponent,
-        data: {
-          title: 'Tickets',
-          description: 'El listado y la gestión de tickets se implementarán a continuación.'
-        },
+        loadComponent: () => import('./pages/tickets/tickets.component')
+          .then((module) => module.TicketsComponent),
         title: 'TicketDesk - Tickets'
       },
       {
