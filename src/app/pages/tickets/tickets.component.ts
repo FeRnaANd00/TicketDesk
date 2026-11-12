@@ -1,17 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { collection, doc, getDoc, getDocs, Timestamp } from 'firebase/firestore';
+import { TicketConversationComponent } from '../../components/ticket-conversation/ticket-conversation.component';
 import { auth, db } from '../../core/firebase.config';
 import { Ticket, TicketCategory, TicketPriority } from '../../models/ticket';
 import { TicketManagementChanges, TicketsService } from '../../services/tickets';
 
-/** Estados simplificados que se muestran en la lista de tickets. */
-type TicketDisplayStatus = 'Nuevo' | 'Asignado' | 'Cerrado';
+/** Estados operativos que se muestran en la lista de tickets. */
+type TicketDisplayStatus = 'Abierto' | 'En proceso' | 'Resuelto';
 
 /** Filtro disponible para limitar la lista por estado. */
 type TicketStatusFilter = 'Todos los estados' | TicketDisplayStatus;
+type TicketScope = 'mine' | 'all';
+type TicketUserRole = 'admin' | 'technician' | 'user';
 
 /** Identifica cuál de los desplegables de edición de ticket está abierto. */
 type TicketEditDropdown = 'category' | 'state' | 'technician' | null;
@@ -26,11 +29,11 @@ interface TechnicianOption {
 /** Tiempo máximo que la interfaz espera a Auth y Firestore antes de permitir reintentar. */
 const TICKET_LOAD_TIMEOUT_MS = 15_000;
 
-/** Presenta y filtra exclusivamente los tickets creados por la persona actual. */
+/** Presenta tickets propios o de soporte según el rol y el alcance seleccionado. */
 @Component({
   selector: 'app-tickets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TicketConversationComponent],
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.css'
 })
@@ -41,8 +44,10 @@ export class TicketsComponent implements OnInit {
   searchTerm = '';
   /** Estado seleccionado para el filtro de la tabla. */
   statusFilter: TicketStatusFilter = 'Todos los estados';
-  /** Controla la visibilidad del menú personalizado de estados. */
-  isStatusMenuOpen = false;
+  /** Alcance de tickets para administradores y técnicos. */
+  ticketScope: TicketScope = 'mine';
+  /** Controla la visibilidad del menú combinado de estado y alcance. */
+  isFilterMenuOpen = false;
   /** Desplegable personalizado abierto en el formulario de edición. */
   openTicketEditDropdown: TicketEditDropdown = null;
   /** Indica que todavía se está consultando Firestore. */
@@ -55,12 +60,18 @@ export class TicketsComponent implements OnInit {
   technicianLoadError = '';
   /** Indica que el perfil autenticado puede gestionar los campos permitidos. */
   canManageTickets = false;
+  /** Identidad autenticada usada para limitar edición y autoasignación. */
+  currentUserId = '';
+  currentUserName = '';
+  currentUserRole: TicketUserRole | null = null;
   /** Técnicos habilitados que pueden asignarse a los tickets. */
   technicians: TechnicianOption[] = [];
   /** Indica que se está consultando el directorio técnico. */
   isLoadingTechnicians = false;
   /** Ticket seleccionado para consultar su descripción completa. */
   selectedTicket: Ticket | null = null;
+  /** Ticket cuya conversación se abre sobre el detalle actual. */
+  conversationTicket: Ticket | null = null;
   /** Indica si el diálogo muestra los campos editables del ticket. */
   isEditingTicket = false;
   /** Indica que el cambio del ticket se está guardando. */
@@ -87,15 +98,16 @@ export class TicketsComponent implements OnInit {
   /** Catálogo de estados que se ofrece en el filtro. */
   readonly statusOptions: TicketStatusFilter[] = [
     'Todos los estados',
-    'Nuevo',
-    'Asignado',
-    'Cerrado'
+    'Abierto',
+    'En proceso',
+    'Resuelto'
   ];
 
   /** Recibe la persistencia y el detector para reflejar respuestas de Firebase. */
   constructor(
     private ticketsService: TicketsService,
-    private changeDetector: ChangeDetectorRef
+    private changeDetector: ChangeDetectorRef,
+    private route: ActivatedRoute
   ) {}
 
   /** Espera a Firebase Auth y obtiene solo los tickets del UID autenticado. */
@@ -107,6 +119,7 @@ export class TicketsComponent implements OnInit {
       await this.loadTickets();
       return;
     }
+    this.currentUserId = userId;
 
     try {
       const profile = await this.withLoadTimeout(
@@ -114,7 +127,21 @@ export class TicketsComponent implements OnInit {
         'La consulta de permisos tardó demasiado.'
       );
       const role = profile.data()?.['role'];
+      if (role === 'admin' || role === 'technician' || role === 'user') {
+        this.currentUserRole = role;
+      }
       this.canManageTickets = role === 'admin' || role === 'technician';
+      this.currentUserName = this.readString(profile.data()?.['username']);
+      this.ticketScope = this.canManageTickets
+        && this.route.snapshot.queryParamMap.get('scope') === 'all'
+        ? 'all'
+        : 'mine';
+      this.statusFilter = this.getStatusFilterFromQuery(
+        this.route.snapshot.queryParamMap.get('status')
+      );
+      if (this.canManageTickets && this.statusFilter === 'Abierto') {
+        this.ticketScope = 'all';
+      }
     } catch (error) {
       console.error('Error al verificar permisos para gestionar tickets:', error);
       this.permissionError = 'No se pudieron verificar tus permisos para editar tickets.';
@@ -122,21 +149,46 @@ export class TicketsComponent implements OnInit {
 
     await Promise.all([
       this.loadTickets(),
-      this.canManageTickets ? this.loadTechnicians() : Promise.resolve()
+      this.currentUserRole === 'admin' ? this.loadTechnicians() : Promise.resolve()
     ]);
     this.changeDetector.markForCheck();
   }
 
   /** Número de tickets propios que continúan activos. */
   get activeTicketCount(): number {
-    return this.tickets.filter(ticket => this.getDisplayStatus(ticket) !== 'Cerrado').length;
+    return this.visibleTickets.filter(ticket => this.getDisplayStatus(ticket) !== 'Resuelto').length;
   }
 
-  /** Lista filtrada por texto y estado, conservando primero los más recientes. */
+  get pageTitle(): string {
+    if (!this.canManageTickets) {
+      return 'Mis tickets';
+    }
+    return this.ticketScope === 'mine' ? 'Tickets asignados a mí' : 'Tickets de soporte';
+  }
+
+  get pageDescription(): string {
+    if (!this.canManageTickets) {
+      return 'Consulta y da seguimiento a las incidencias que has reportado.';
+    }
+    return this.ticketScope === 'mine'
+      ? 'Incidencias asignadas a tu cuenta, incluidas las ya resueltas.'
+      : 'Consulta los tickets de todos los técnicos; solo puedes gestionar los que te corresponden.';
+  }
+
+  /** Limita la lista a los tickets asignados al usuario cuando el alcance es personal. */
+  get visibleTickets(): Ticket[] {
+    if (!this.canManageTickets || this.ticketScope === 'all') {
+      return this.tickets;
+    }
+
+    return this.tickets.filter(ticket => ticket.tecnicoAsignadoId === this.currentUserId);
+  }
+
+  /** Lista filtrada por alcance, texto y estado. */
   get filteredTickets(): Ticket[] {
     const search = this.searchTerm.trim().toLocaleLowerCase('es');
 
-    return this.tickets.filter(ticket => {
+    return this.visibleTickets.filter(ticket => {
       const matchesStatus = this.statusFilter === 'Todos los estados'
         || this.getDisplayStatus(ticket) === this.statusFilter;
       const searchableText = [
@@ -160,11 +212,11 @@ export class TicketsComponent implements OnInit {
 
     try {
       this.tickets = await this.withLoadTimeout(
-        this.getOwnTickets(),
+        this.getTicketsForCurrentRole(),
         'La consulta de tickets tardó demasiado.'
       );
     } catch (error) {
-      console.error('Error al cargar los tickets propios:', error);
+      console.error('Error al cargar los tickets visibles:', error);
       this.loadError = error instanceof Error && error.message.startsWith('TICKET_LOAD_TIMEOUT')
         ? 'La consulta está tardando demasiado. Revisa tu conexión y los permisos de Firestore; después inténtalo de nuevo.'
         : 'No se pudieron cargar tus tickets. Revisa tu conexión y los permisos de Firestore e inténtalo de nuevo.';
@@ -174,15 +226,17 @@ export class TicketsComponent implements OnInit {
     }
   }
 
-  /** Obtiene la lista propia una vez que Firebase Auth confirma la sesión actual. */
-  private async getOwnTickets(): Promise<Ticket[]> {
+  /** Técnicos y administradores consultan la cola global; usuarios solo sus reportes. */
+  private async getTicketsForCurrentRole(): Promise<Ticket[]> {
     await auth.authStateReady();
     const userId = auth.currentUser?.uid;
     if (!userId) {
       throw new Error('No hay una sesión autenticada para consultar tickets.');
     }
 
-    return this.ticketsService.listarPropios(userId);
+    return this.currentUserRole === 'admin' || this.currentUserRole === 'technician'
+      ? this.ticketsService.listarTodos()
+      : this.ticketsService.listarPropios(userId);
   }
 
   /** Carga los técnicos habilitados para completar las asignaciones del formulario. */
@@ -221,15 +275,49 @@ export class TicketsComponent implements OnInit {
   /** Selecciona un estado del menú y cierra sus opciones. */
   selectStatusFilter(status: TicketStatusFilter): void {
     this.statusFilter = status;
-    this.isStatusMenuOpen = false;
+    if (this.canManageTickets && status === 'Abierto') {
+      this.ticketScope = 'all';
+    }
+    this.isFilterMenuOpen = false;
   }
 
-  /** Cierra el menú de estados al pulsar fuera de su control. */
+  toggleFilterMenu(): void {
+    this.isFilterMenuOpen = !this.isFilterMenuOpen;
+  }
+
+  /** Alterna entre los tickets asignados al usuario y la cola visible de soporte. */
+  selectTicketScope(scope: TicketScope): void {
+    if (!this.canManageTickets || this.statusFilter === 'Abierto') {
+      return;
+    }
+
+    this.ticketScope = scope;
+    this.isFilterMenuOpen = false;
+  }
+
+  get ticketScopeLabel(): string {
+    return this.ticketScope === 'mine' ? 'Asignados a mí' : 'Todos los técnicos';
+  }
+
+  private getStatusFilterFromQuery(status: string | null): TicketStatusFilter {
+    switch (status) {
+      case 'abierto':
+        return 'Abierto';
+      case 'en proceso':
+        return 'En proceso';
+      case 'cerrado':
+        return 'Resuelto';
+      default:
+        return 'Todos los estados';
+    }
+  }
+
+  /** Cierra el menú combinado al pulsar fuera de sus controles. */
   @HostListener('document:click', ['$event'])
   closeStatusMenuOnOutsideClick(event: MouseEvent): void {
     const target = event.target;
     if (!(target instanceof Element) || !target.closest('.status-dropdown')) {
-      this.isStatusMenuOpen = false;
+      this.isFilterMenuOpen = false;
     }
     if (!(target instanceof Element) || !target.closest('.ticket-edit-dropdown')) {
       this.openTicketEditDropdown = null;
@@ -238,8 +326,8 @@ export class TicketsComponent implements OnInit {
 
   /** Cierra los menús personalizados al presionar Escape. */
   @HostListener('document:keydown.escape')
-  closeStatusMenuOnEscape(): void {
-    this.isStatusMenuOpen = false;
+  closeFilterMenuOnEscape(): void {
+    this.isFilterMenuOpen = false;
     this.openTicketEditDropdown = null;
   }
 
@@ -312,14 +400,54 @@ export class TicketsComponent implements OnInit {
   /** Traduce el estado almacenado y la asignación al vocabulario de la pantalla. */
   getDisplayStatus(ticket: Ticket): TicketDisplayStatus {
     if (ticket.estado === 'cerrado') {
-      return 'Cerrado';
+      return 'Resuelto';
     }
 
     if (ticket.estado === 'en proceso' || Boolean(ticket.tecnicoAsignadoId)) {
-      return 'Asignado';
+      return 'En proceso';
     }
 
-    return 'Nuevo';
+    return 'Abierto';
+  }
+
+  getDisplayStatusClass(ticket: Ticket): string {
+    return `status-${this.getDisplayStatus(ticket).toLocaleLowerCase('es').replace(/\s+/g, '-')}`;
+  }
+
+  /** Define quién puede editar metadatos de un ticket abierto. */
+  canEditTicket(ticket: Ticket): boolean {
+    if (this.currentUserRole === 'admin') {
+      return true;
+    }
+    if (ticket.estado === 'cerrado') {
+      return false;
+    }
+
+    return ticket.clienteId === this.currentUserId
+      || (this.currentUserRole === 'technician'
+        && ticket.tecnicoAsignadoId === this.currentUserId);
+  }
+
+  /** Los técnicos pueden tomarse únicamente tickets abiertos que todavía no tienen dueño. */
+  canSelfAssignTicket(ticket: Ticket): boolean {
+    return this.currentUserRole === 'technician'
+      && ticket.estado === 'abierto'
+      && !ticket.tecnicoAsignadoId;
+  }
+
+  /** Solo el solicitante, el técnico asignado o un administrador pueden abrir la conversación. */
+  canViewConversation(ticket: Ticket): boolean {
+    return this.currentUserRole === 'admin'
+      || ticket.clienteId === this.currentUserId
+      || (this.currentUserRole === 'technician'
+        && ticket.tecnicoAsignadoId === this.currentUserId);
+  }
+
+  getTicketEditRestrictionMessage(ticket: Ticket): string {
+    if (ticket.estado === 'cerrado' && this.currentUserRole !== 'admin') {
+      return 'Ticket cerrado. Solo el administrador puede editarlo.';
+    }
+    return 'Solo el solicitante, el técnico asignado o un administrador pueden editar este ticket.';
   }
 
   /** Devuelve el número nuevo en formato TKD o el ID original para históricos. */
@@ -364,8 +492,37 @@ export class TicketsComponent implements OnInit {
   /** Abre los detalles del ticket seleccionado. */
   showDetails(ticket: Ticket): void {
     this.selectedTicket = ticket;
+    this.conversationTicket = null;
     this.isEditingTicket = false;
     this.ticketEditError = '';
+  }
+
+  /** Abre la conversación asociada al ticket seleccionado. */
+  openConversation(ticket: Ticket): void {
+    if (!this.canViewConversation(ticket)) {
+      return;
+    }
+    this.conversationTicket = ticket;
+    this.selectedTicket = null;
+  }
+
+  /** Cierra solo la conversación y conserva abierto el detalle del ticket. */
+  closeConversation(): void {
+    this.selectedTicket = this.conversationTicket;
+    this.conversationTicket = null;
+  }
+
+  /** Refleja de inmediato el cierre que se guardó junto con una solución. */
+  markTicketResolved(ticket: Ticket): void {
+    const resolvedTicket: Ticket = { ...ticket, estado: 'cerrado' };
+    this.tickets = this.tickets.map(existingTicket =>
+      existingTicket.id === ticket.id ? resolvedTicket : existingTicket
+    );
+    if (this.selectedTicket?.id === ticket.id) {
+      this.selectedTicket = resolvedTicket;
+    }
+    this.conversationTicket = resolvedTicket;
+    this.changeDetector.markForCheck();
   }
 
   /** Cierra el panel de detalles sin alterar el ticket. */
@@ -374,13 +531,14 @@ export class TicketsComponent implements OnInit {
       return;
     }
     this.selectedTicket = null;
+    this.conversationTicket = null;
     this.isEditingTicket = false;
     this.ticketEditError = '';
   }
 
   /** Prepara el formulario con los valores actuales de la incidencia. */
   beginTicketEdit(ticket: Ticket): void {
-    if (!this.canManageTickets) {
+    if (!this.canEditTicket(ticket)) {
       return;
     }
 
@@ -393,6 +551,42 @@ export class TicketsComponent implements OnInit {
     this.ticketEditError = '';
     this.isEditingTicket = true;
     this.openTicketEditDropdown = null;
+  }
+
+  /** Asigna un ticket abierto y libre al técnico autenticado, sin permitir asignarlo a terceros. */
+  async selfAssignTicket(ticket: Ticket): Promise<void> {
+    if (!this.canSelfAssignTicket(ticket) || !ticket.id || !this.currentUserId
+      || !this.currentUserName || this.isSavingTicket) {
+      return;
+    }
+
+    this.isSavingTicket = true;
+    this.ticketEditError = '';
+    try {
+      await this.ticketsService.autoasignarTicket(
+        ticket.id,
+        this.currentUserId,
+        this.currentUserName
+      );
+      const assignedTicket: Ticket = {
+        ...ticket,
+        tecnicoAsignadoId: this.currentUserId,
+        tecnicoAsignadoNombre: this.currentUserName,
+        estado: 'en proceso'
+      };
+      this.tickets = this.tickets.map(existingTicket =>
+        existingTicket.id === ticket.id ? assignedTicket : existingTicket
+      );
+      this.selectedTicket = assignedTicket;
+    } catch (error) {
+      console.error('Error al autoasignar el ticket:', error);
+      this.ticketEditError = error instanceof Error && error.message.includes('permission')
+        ? 'No puedes asignar este ticket. Solo es posible tomar tickets abiertos sin asignar.'
+        : 'No se pudo asignar el ticket. Revisa tu conexión e inténtalo de nuevo.';
+    } finally {
+      this.isSavingTicket = false;
+      this.changeDetector.markForCheck();
+    }
   }
 
   /** Descarta los cambios locales y regresa a la consulta del ticket. */
@@ -408,15 +602,16 @@ export class TicketsComponent implements OnInit {
   /** Valida y guarda únicamente categoría, estado y técnico asignado. */
   async saveTicketChanges(): Promise<void> {
     const ticket = this.selectedTicket;
-    if (!ticket?.id || !this.canManageTickets || this.isSavingTicket) {
+    if (!ticket?.id || !this.canEditTicket(ticket) || this.isSavingTicket) {
       return;
     }
 
-    const assignedTechnician = this.ticketEditForm.tecnicoAsignadoId
+    const isAdmin = this.currentUserRole === 'admin';
+    const assignedTechnician = isAdmin && this.ticketEditForm.tecnicoAsignadoId
       ? this.technicians.find(technician => technician.uid === this.ticketEditForm.tecnicoAsignadoId)
       : undefined;
 
-    if (this.ticketEditForm.tecnicoAsignadoId && !assignedTechnician) {
+    if (isAdmin && this.ticketEditForm.tecnicoAsignadoId && !assignedTechnician) {
       this.ticketEditError = this.technicianLoadError
         || 'El técnico seleccionado ya no está disponible. Actualiza la lista e inténtalo de nuevo.';
       return;
@@ -429,20 +624,32 @@ export class TicketsComponent implements OnInit {
       const changes: TicketManagementChanges = {
         categoria: this.ticketEditForm.categoria,
         estado: this.ticketEditForm.estado,
-        tecnicoAsignadoId: assignedTechnician?.uid ?? '',
-        tecnicoAsignadoNombre: assignedTechnician?.username ?? ''
+        tecnicoAsignadoId: isAdmin
+          ? assignedTechnician?.uid ?? ''
+          : ticket.tecnicoAsignadoId ?? '',
+        tecnicoAsignadoNombre: isAdmin
+          ? assignedTechnician?.username ?? ''
+          : ticket.tecnicoAsignadoNombre ?? ''
       };
-      await this.ticketsService.actualizarGestion(ticket.id, changes);
+      if (isAdmin) {
+        await this.ticketsService.actualizarGestion(ticket.id, changes);
+      } else {
+        await this.ticketsService.actualizarCategoriaEstado(
+          ticket.id,
+          changes.categoria,
+          changes.estado
+        );
+      }
 
       const updatedTicket: Ticket = {
         ...ticket,
         categoria: changes.categoria,
         estado: changes.estado
       };
-      if (changes.tecnicoAsignadoId) {
+      if (isAdmin && changes.tecnicoAsignadoId) {
         updatedTicket.tecnicoAsignadoId = changes.tecnicoAsignadoId;
         updatedTicket.tecnicoAsignadoNombre = changes.tecnicoAsignadoNombre;
-      } else {
+      } else if (isAdmin) {
         delete updatedTicket.tecnicoAsignadoId;
         delete updatedTicket.tecnicoAsignadoNombre;
       }
@@ -472,6 +679,11 @@ export class TicketsComponent implements OnInit {
       tecnicoAsignadoId: '',
       tecnicoAsignadoNombre: ''
     };
+  }
+
+  /** Normaliza campos de perfil opcionales para usarlos en controles y mensajes. */
+  private readString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
   }
 
   /** Proporciona una clave estable para que Angular actualice las filas correctamente. */

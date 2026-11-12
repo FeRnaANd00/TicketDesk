@@ -1,0 +1,91 @@
+:host { display:block; }
+
+/* La capa centra el diálogo y mantiene un contraste claro con el resto de la app. */
+.ticket-conversation-backdrop { position:fixed; z-index:1200; inset:0; display:grid; place-items:center; padding:1rem; background:rgba(15,23,42,.58); }
+.ticket-conversation-window { display:grid; width:min(100%,64rem); max-height:min(94vh,60rem); grid-template-rows:auto minmax(0,1fr) auto; gap:.8rem; overflow:hidden; padding:1rem; background:#f7f9fc; border:1px solid rgba(255,255,255,.75); border-radius:1rem; box-shadow:0 24px 70px rgba(15,23,42,.3); }
+
+/* La ficha superior muestra identificador, prioridad y estado, sin acciones ajenas al chat. */
+.conversation-ticket-overview { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; background:#fff; border:1px solid #e1e7f0; border-radius:.9rem; }
+.conversation-ticket-overview-content { min-width:0; }
+.conversation-ticket-badges,.conversation-ticket-secondary { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .5rem; }
+.conversation-ticket-number,.conversation-ticket-status,.conversation-priority-badge { display:inline-flex; min-height:1.5rem; align-items:center; gap:.3rem; padding:.2rem .52rem; border:1px solid transparent; border-radius:99px; font-size:.65rem; font-weight:750; line-height:1.2; }
+.conversation-ticket-number { color:#23344c; background:#f3f6fa; border-color:#e4e9f1; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+.conversation-ticket-status { color:#15765e; background:#e8fbf4; border-color:#b7f1dc; }
+.conversation-status-dot { width:.42rem; height:.42rem; border-radius:50%; background:currentColor; }
+.conversation-ticket-secondary { margin-top:.5rem; }
+.conversation-priority-badge { min-height:1.35rem; padding:.16rem .45rem; font-size:.61rem; }
+.conversation-priority-badge { color:#9a5c0b; background:#fff8e9; border-color:#f4e0b0; }
+.conversation-ticket-overview h2 { margin:.55rem 0 .22rem; color:#172335; font-size:clamp(1.05rem,2vw,1.35rem); line-height:1.25; overflow-wrap:anywhere; }
+.conversation-ticket-summary { margin:0; color:#697991; font-size:.71rem; line-height:1.45; }
+.conversation-close { display:grid; width:2.25rem; height:2.25rem; flex:0 0 auto; place-items:center; color:#596475; background:#f3f5f8; border:0; border-radius:.7rem; cursor:pointer; }
+
+/* La solicitud inicial y las respuestas comparten una línea de tiempo desplazable. */
+.conversation-history { display:grid; min-height:0; grid-template-rows:auto minmax(0,1fr); overflow:hidden; background:#fff; border:1px solid #e1e7f0; border-radius:.9rem; }
+.conversation-history-heading { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.7rem .9rem; border-bottom:1px solid #edf0f4; }
+.conversation-history-heading h3 { margin:0; color:#202b3a; font-size:.82rem; }
+.conversation-history-heading p { margin:.18rem 0 0; color:#7a8494; font-size:.66rem; }
+.conversation-messages { display:flex; min-height:0; flex-direction:column; gap:.8rem; overflow-y:auto; padding:.9rem; background:#f9fbfe; }
+.conversation-message-row { display:flex; width:100%; align-items:flex-start; gap:.6rem; }
+.conversation-avatar { display:grid; width:2.35rem; height:2.35rem; flex:0 0 auto; place-items:center; color:#fff; background:#13b8a6; border:3px solid #e4fbf7; border-radius:.75rem; box-shadow:0 2px 5px rgba(15,23,42,.1); font-size:.64rem; font-weight:800; }
+.conversation-original-avatar { background:#9333ea; border-color:#f1e7ff; }
+.conversation-message-bubble { min-width:0; flex:1 1 auto; padding:.7rem .8rem; color:#354052; background:#fff; border:1px solid #e5eaf1; border-radius:.72rem; }
+.conversation-original-card { background:#f0fcf8; border-color:#b9efdc; }
+.conversation-message-bubble.conversation-message-solution { color:#173c70; background:#f0f6ff; border-color:#c8dcfb; }
+.conversation-message-meta { display:flex; flex-wrap:wrap; align-items:center; gap:.3rem .4rem; margin-bottom:.5rem; }
+.conversation-edit-icon { display:grid; width:1.75rem; height:1.75rem; margin-left:auto; place-items:center; color:#596b83; background:#fff; border:1px solid #dfe4eb; border-radius:.45rem; cursor:pointer; }
+.conversation-edit-icon:hover:not(:disabled) { color:#9c0a18; background:#fff6f5; }
+.conversation-edit-icon:disabled { cursor:not-allowed; opacity:.5; }
+.conversation-meta-chip,.conversation-request-tag,.conversation-role,.conversation-solution-tag { display:inline-flex; flex-wrap:wrap; align-items:center; gap:.2rem; padding:.2rem .4rem; border:1px solid #e4eaf2; border-radius:.38rem; font-size:.6rem; }
+.conversation-meta-chip { color:#55647a; background:rgba(255,255,255,.82); }
+.conversation-meta-chip strong,.conversation-meta-chip time { color:#34445c; font-weight:750; }
+.conversation-request-tag { color:#16725e; background:#e5faf3; border-color:#bcebd9; border-radius:99px; font-weight:750; }
+.conversation-role { color:#64728a; background:#f4f6f9; border-color:#e6eaf0; border-radius:99px; font-weight:700; }
+.conversation-solution-tag { color:#175ba8; background:#e4f0ff; border-color:#c8ddfa; border-radius:99px; font-weight:750; }
+.conversation-message-bubble h4 { margin:.1rem 0 .42rem; color:#173044; font-size:.82rem; }
+.conversation-message-bubble>p { margin:0; padding:.55rem .65rem; color:inherit; background:rgba(255,255,255,.75); border:1px solid #dce5ef; border-radius:.62rem; font-size:.76rem; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; }
+.conversation-request-details { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.5rem; }
+.conversation-detail-chip { display:inline-flex; align-items:center; gap:.18rem; padding:.18rem .35rem; color:#24715d; background:#e3f8f0; border-radius:.3rem; font-size:.59rem; font-weight:650; overflow-wrap:anywhere; }
+
+/* La carga y los errores se muestran dentro del historial sin ocultar el compositor. */
+.conversation-state { display:flex; min-height:8rem; align-items:center; justify-content:center; gap:.45rem; padding:1rem; color:#7b8493; font-size:.76rem; text-align:center; }
+.conversation-state>.material-symbols-outlined { color:#9c0a18; font-size:1.3rem; }
+.conversation-error { color:#9c1b22; }
+.conversation-spinner { width:1.2rem; height:1.2rem; border:2px solid #f4d8da; border-top-color:#a20d19; border-radius:50%; animation:conversation-spin .8s linear infinite; }
+@keyframes conversation-spin { to { transform:rotate(360deg); } }
+
+/* El compositor conserva controles de envío y presenta errores y estados explícitos. */
+.conversation-composer { display:grid; gap:.4rem; padding:.8rem .9rem; background:#fff; border:1px solid #e1e7f0; border-radius:.85rem; }
+.conversation-composer>label { color:#536073; font-size:.71rem; font-weight:750; }
+.conversation-composer textarea,.conversation-edit-textarea { width:100%; min-height:4.5rem; resize:vertical; padding:.62rem .72rem; color:#27313f; background:#fbfcfe; border:1px solid #dfe4eb; border-radius:.7rem; outline:0; font:inherit; font-size:.76rem; line-height:1.45; }
+.conversation-composer textarea:focus,.conversation-edit-textarea:focus { border-color:#a20d19; box-shadow:0 0 0 3px rgba(162,13,25,.1); }
+.conversation-composer textarea:disabled,.conversation-edit-textarea:disabled { background:#f5f6f8; cursor:not-allowed; }
+.conversation-composer-footer { display:flex; align-items:center; justify-content:space-between; gap:.7rem; }
+.conversation-character-count { color:#8791a1; font-size:.64rem; }
+.conversation-send-error,.conversation-send-status { margin:0 0 .2rem; font-size:.68rem; }
+.conversation-send-error { color:#9c1b22; }
+.conversation-send-status { color:#26714a; font-weight:700; }
+.conversation-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.45rem; }
+.conversation-actions button { display:inline-flex; min-height:2.4rem; align-items:center; justify-content:center; gap:.35rem; padding:.5rem .7rem; border:0; border-radius:.65rem; cursor:pointer; font:inherit; font-size:.7rem; font-weight:750; transition:transform .15s ease,filter .15s ease; }
+.conversation-actions button:disabled { cursor:not-allowed; opacity:.5; }
+.conversation-actions button .material-symbols-outlined { font-size:.95rem; }
+.conversation-send-message { color:#374151; background:#e9edf2; }
+.conversation-send-solution { color:#fff; background:#2563b8; }
+
+/* En móviles, el modal y las acciones se adaptan al ancho disponible. */
+@media (max-width:640px) {
+  .ticket-conversation-backdrop { padding:.4rem; }
+  .ticket-conversation-window { max-height:96vh; gap:.55rem; padding:.55rem; border-radius:.8rem; }
+  .conversation-ticket-overview { padding:.8rem; }
+  .conversation-messages { gap:.65rem; padding:.65rem; }
+  .conversation-avatar { width:2rem; height:2rem; }
+  .conversation-message-bubble { padding:.62rem; }
+  .conversation-composer-footer { align-items:flex-start; flex-direction:column; }
+  .conversation-actions { width:100%; }
+  .conversation-actions button { flex:1; }
+}
+
+/* Respeta la preferencia del usuario para movimiento reducido. */
+@media (prefers-reduced-motion:reduce) {
+  .conversation-spinner { animation:none; }
+  .conversation-actions button { transition:none; }
+}

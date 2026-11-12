@@ -112,22 +112,48 @@ service cloud.firestore {
         );
       }
 
-      function isValidSupportEdit() {
-        return signedIn()
-          && (isAdmin()
-            || (isTechnician() && (isRequester() || isAssignedTechnician())))
+      function hasValidTicketCategoryAndState() {
+        return request.resource.data.categoria in [
+            'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
+          ]
+          && request.resource.data.estado in ['abierto', 'en proceso', 'cerrado'];
+      }
+
+      function isValidAdminEdit() {
+        return isAdmin()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'categoria', 'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'
           ])
-          && request.resource.data.categoria in [
-            'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
-          ]
-          && request.resource.data.estado in ['abierto', 'en proceso', 'cerrado']
+          && hasValidTicketCategoryAndState()
+          && hasValidSupportAssignment();
+      }
+
+      function isValidRequesterOrAssigneeEdit() {
+        return signedIn()
+          && resource.data.estado != 'cerrado'
+          && (isRequester() || (isTechnician() && isAssignedTechnician()))
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['categoria', 'estado'])
+          && hasValidTicketCategoryAndState();
+      }
+
+      function isValidSelfAssignment() {
+        return isTechnician()
+          && resource.data.estado == 'abierto'
+          && (!('tecnicoAsignadoId' in resource.data.keys())
+            || resource.data.tecnicoAsignadoId == '')
+          && request.resource.data.tecnicoAsignadoId == request.auth.uid
+          && request.resource.data.tecnicoAsignadoNombre
+            == userDocument(request.auth.uid).data.username
+          && request.resource.data.estado == 'en proceso'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'
+          ])
           && hasValidSupportAssignment();
       }
 
       allow get, list: if signedIn()
-        && (isAdmin() || isRequester() || isAssignedTechnician());
+        && (isAdmin() || isTechnician() || isRequester() || isAssignedTechnician());
       allow create: if signedIn()
         && request.resource.data.clienteId == request.auth.uid
         && request.resource.data.numero is int
@@ -146,12 +172,62 @@ service cloud.firestore {
           'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'adjuntos', 'numero'
         ]);
       allow update: if signedIn() && (
-        isValidSupportEdit()
+        isValidAdminEdit()
+        || isValidRequesterOrAssigneeEdit()
+        || isValidSelfAssignment()
         || (isRequester()
+          && resource.data.estado != 'cerrado'
           && resource.data.adjuntos.size() == 0
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adjuntos']))
       );
       allow delete: if isAdmin();
+    }
+
+    // Restringe la conversación al solicitante, técnico asignado y administradores.
+    match /tickets/{ticketId}/messages/{messageId} {
+      function parentTicketData() {
+        return get(/databases/$(database)/documents/tickets/$(ticketId)).data;
+      }
+
+      function isConversationParticipant() {
+        return signedIn()
+          && (isAdmin()
+            || parentTicketData().clienteId == request.auth.uid
+            || (isTechnician()
+              && parentTicketData().tecnicoAsignadoId == request.auth.uid));
+      }
+
+      allow get, list: if isConversationParticipant();
+      allow create: if isConversationParticipant()
+        && (isAdmin() || parentTicketData().estado != 'cerrado')
+        && request.resource.data.keys().hasOnly([
+          'text', 'authorId', 'authorName', 'authorRole', 'type', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'text', 'authorId', 'authorName', 'authorRole', 'type', 'createdAt'
+        ])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() > 0
+        && request.resource.data.authorName == userDocument(request.auth.uid).data.username
+        && request.resource.data.authorRole == userDocument(request.auth.uid).data.role
+        && request.resource.data.type in ['message', 'solution']
+        && (request.resource.data.type == 'message'
+          || isAdmin()
+          || (isTechnician()
+            && parentTicketData().tecnicoAsignadoId == request.auth.uid))
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 4000
+        && request.resource.data.createdAt == request.time;
+      allow update: if isConversationParticipant()
+        && (isAdmin() || parentTicketData().estado != 'cerrado')
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 4000;
+      allow delete: if false;
     }
   }
 }

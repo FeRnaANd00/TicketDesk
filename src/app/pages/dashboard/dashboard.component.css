@@ -1,89 +1,99 @@
-/**
- * =============================================================================
- * ESTILOS DEL DASHBOARD - TICKETDESK
- * =============================================================================
- * Ubicación: src/app/pages/dashboard/dashboard.component.css
- * 
- * Este archivo complementa las clases de Tailwind CSS, añadiendo animaciones
- * personalizadas y ajustes de comportamiento para los elementos interactivos.
- */
+:host { display:block; }
 
-/* 
- * Definición del Host: 
- * Asegura que el componente se comporte como un elemento de bloque 
- * para que el fondo ocupe todo el ancho disponible.
- */
-:host {
-  display: block;
+.dashboard-page {
+  --ink:#121c2a;
+  --muted:#667085;
+  --red:#a20d19;
+  --line:#e6eaf1;
+  width:min(100%,96rem);
+  margin:0 auto;
+  padding:clamp(1rem,3vw,2.5rem);
+  color:var(--ink);
 }
 
-/**
- * ANIMACIONES DE INTERFAZ
- */
+.dashboard-content { display:grid; gap:1.35rem; }
+.dashboard-heading,.ticket-list-heading,.ticket-list-title,.dashboard-heading-actions,.dashboard-list-toolbar,.dashboard-filters,.dashboard-filter-trigger,.dashboard-pagination,.dashboard-page-controls { display:flex; }
+.dashboard-heading,.ticket-list-heading { align-items:center; justify-content:space-between; gap:1rem; }
+.dashboard-heading { padding-bottom:.2rem; }
+.dashboard-heading h1 { margin:0; font-size:clamp(1.7rem,4vw,2.25rem); letter-spacing:-.04em; }
+.dashboard-heading p:last-child,.ticket-list-heading>div>p { margin:.4rem 0 0; color:var(--muted); font-size:.86rem; }
+.dashboard-eyebrow { margin:0 0 .35rem; color:var(--red); font-size:.7rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+.dashboard-heading-actions { align-items:center; gap:.6rem; }
+.dashboard-primary-button,.dashboard-secondary-button,.dashboard-export-button { display:inline-flex; min-height:2.65rem; align-items:center; justify-content:center; gap:.4rem; padding:.6rem .85rem; border-radius:.7rem; cursor:pointer; font:inherit; font-size:.79rem; font-weight:750; text-decoration:none; transition:background-color .15s ease,transform .15s ease; }
+.dashboard-primary-button { color:#fff; background:var(--red); border:1px solid var(--red); }
+.dashboard-primary-button:hover:not(:disabled) { background:#820b14; transform:translateY(-1px); }
+.dashboard-secondary-button,.dashboard-export-button { color:#9c0a18; background:#fff4f3; border:1px solid #bb011226; }
+.dashboard-secondary-button:hover,.dashboard-export-button:hover:not(:disabled) { background:#ffe9e7; }
+.dashboard-primary-button:disabled,.dashboard-export-button:disabled { cursor:not-allowed; opacity:.5; }
+.dashboard-primary-button .material-symbols-outlined,.dashboard-secondary-button .material-symbols-outlined,.dashboard-export-button .material-symbols-outlined { font-size:1.05rem; }
+.refresh-button .material-symbols-outlined { transition:transform .35s ease; }
+.refresh-button:hover .material-symbols-outlined { transform:rotate(90deg); }
 
-/* 
- * Animación de Entrada Suave (Fade-In):
- * Se aplica a los contenedores para que aparezcan deslizándose hacia arriba.
- */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
+.dashboard-list-card { position:relative; background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
+.ticket-list-heading { padding:1.05rem 1.1rem; border-bottom:1px solid var(--line); }
+.ticket-list-title { align-items:center; flex-wrap:wrap; gap:.45rem; }
+.ticket-list-title>.material-symbols-outlined { color:var(--red); font-size:1.25rem; }
+.ticket-list-title h2 { margin:0; font-size:1rem; }
+.ticket-count-pill { padding:.23rem .55rem; color:#9c0a18; background:#fff0ef; border-radius:99px; font-size:.67rem; font-weight:750; }
+.ticket-list-heading>div>p { font-size:.73rem; }
+.dashboard-export-button { min-height:2.4rem; flex:0 0 auto; }
+
+.dashboard-list-toolbar { position:relative; z-index:2; align-items:center; justify-content:space-between; gap:.75rem; padding:.85rem 1.1rem; border-bottom:1px solid #eef0f4; }
+.dashboard-search { display:flex; width:min(100%,34rem); min-width:12rem; min-height:2.55rem; align-items:center; gap:.5rem; padding:0 .7rem; color:#7b8493; background:#f7f8fb; border:1px solid #e8ebf1; border-radius:.7rem; }
+.dashboard-search:focus-within { border-color:rgba(162,13,25,.45); box-shadow:0 0 0 3px rgba(162,13,25,.08); }
+.dashboard-search>.material-symbols-outlined { font-size:1.1rem; }
+.dashboard-filters { align-items:center; gap:.55rem; }
+.dashboard-filter { position:relative; z-index:3; width:min(12rem,35vw); }
+.dashboard-filter-trigger { width:100%; min-height:2.55rem; align-items:center; justify-content:space-between; gap:.45rem; padding:.55rem .7rem; color:#9c0a18; background:#fff4f3; border:1px solid #bb011226; border-radius:.7rem; cursor:pointer; font:inherit; font-size:.73rem; font-weight:700; text-align:left; }
+.dashboard-filter-trigger:hover,.dashboard-filter-trigger[aria-expanded=true] { color:#fff; background:#bb0112; border-color:#bb0112; }
+.dashboard-filter-trigger:focus-visible,.dashboard-filter-option:focus-visible,.dashboard-page-controls button:focus-visible { outline:3px solid rgba(187,1,18,.24); outline-offset:2px; }
+.dashboard-filter-options { position:absolute; z-index:20; top:calc(100% + .35rem); right:0; left:0; display:grid; gap:.2rem; max-height:15rem; overflow-y:auto; padding:.4rem; background:#fff; border:1px solid var(--line); border-radius:.8rem; box-shadow:0 14px 32px rgba(18,28,42,.16); }
+.dashboard-filter-option { display:flex; width:100%; min-height:2.55rem; align-items:center; justify-content:space-between; gap:.5rem; padding:.55rem .6rem; color:#27313f; background:#fff; border:1px solid transparent; border-radius:.6rem; cursor:pointer; font:inherit; font-size:.75rem; text-align:left; }
+.dashboard-filter-option:hover,.dashboard-filter-option-active { color:#9c0a18; background:#fff4f3; border-color:#bb01121a; }
+.dashboard-table-scroll { overflow-x:auto; }
+.dashboard-tickets-table { width:100%; border-collapse:collapse; text-align:left; }
+.dashboard-tickets-table th { padding:.78rem .7rem; color:#697386; background:#fafbfc; border-bottom:1px solid var(--line); font-size:.65rem; font-weight:750; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.dashboard-tickets-table td { padding:.82rem .7rem; color:#3e4858; border-bottom:1px solid #eef0f4; font-size:.74rem; vertical-align:middle; }
+.dashboard-tickets-table tbody tr:last-child td { border-bottom:0; }
+.dashboard-tickets-table tbody tr:hover { background:#fcfcfd; }
+.dashboard-ticket-number { color:#8d101b!important; font-size:.7rem!important; font-weight:800; white-space:nowrap; }
+.dashboard-ticket-title { min-width:12rem; max-width:19rem; }
+.dashboard-ticket-title strong,.dashboard-ticket-title span { display:block; }
+.dashboard-ticket-title strong { overflow:hidden; color:var(--ink); text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-ticket-title span { display:-webkit-box; overflow:hidden; margin-top:.2rem; color:#8590a0; font-size:.66rem; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.dashboard-ticket-date { min-width:8.5rem; white-space:nowrap; }
+.dashboard-badge { display:inline-flex; min-height:1.45rem; align-items:center; padding:.2rem .48rem; border-radius:99px; font-size:.65rem; font-weight:750; white-space:nowrap; }
+.priority-urgente { color:#a4131c; background:#ffeded; }
+.priority-alta { color:#a54b00; background:#fff2df; }
+.priority-media { color:#876000; background:#fff8d9; }
+.priority-baja { color:#425e7e; background:#edf4fc; }
+.status-abierto { color:#345c94; background:#edf4ff; }
+.status-en-proceso { color:#876000; background:#fff6d8; }
+.status-resuelto { color:#426b58; background:#e9f6ef; }
+.dashboard-view-button { display:inline-flex; align-items:center; gap:.2rem; padding:.35rem .5rem; color:var(--red); background:transparent; border:0; border-radius:.5rem; cursor:pointer; font:inherit; font-size:.71rem; font-weight:750; white-space:nowrap; }
+.dashboard-view-button:hover { background:#fff1f0; }
+.dashboard-view-button .material-symbols-outlined { font-size:1rem; }
+.dashboard-pagination { align-items:center; justify-content:space-between; gap:.7rem; padding:.8rem 1.1rem; color:#778293; border-top:1px solid var(--line); font-size:.7rem; }
+.dashboard-page-controls { align-items:center; gap:.65rem; color:#4e5969; font-weight:700; }
+.dashboard-page-controls button { display:grid; width:2rem; height:2rem; place-items:center; color:#9c0a18; background:#fff4f3; border:1px solid #bb011226; border-radius:.55rem; cursor:pointer; }
+.dashboard-page-controls button:disabled { color:#aab2bf; background:#f7f8fb; border-color:#e6eaf1; cursor:not-allowed; }
+
+@media (max-width:900px) {
+  .dashboard-list-toolbar { align-items:stretch; flex-direction:column; }
+  .dashboard-search { width:100%; }
+  .dashboard-filters,.dashboard-filter { width:100%; }
+  .dashboard-filter { flex:1; }
 }
 
-/* 
- * Definición de Keyframes para fadeIn:
- * Comienza con opacidad 0 y un ligero desplazamiento hacia abajo (10px).
- */
-@keyframes fadeIn {
-  from { 
-    opacity: 0; 
-    transform: translateY(10px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
+@media (max-width:700px) {
+  .ticket-list-heading { align-items:flex-start; flex-direction:column; }
+  .dashboard-export-button { align-self:flex-end; }
 }
 
-/* 
- * Animación de Carga (Spinner):
- * Rotación infinita de 360 grados para el círculo de carga.
- */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/**
- * INTERACCIONES DE COMPONENTES
- */
-
-/* 
- * Efecto Hover en Tarjetas (.group):
- * Cuando el usuario pasa el mouse, la tarjeta sube ligeramente (4px)
- * utilizando una curva de Bezier para un movimiento natural y fluido.
- */
-.group:hover {
-  transform: translateY(-4px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/**
- * AJUSTES DE ICONOGRAFÍA (Material Symbols)
- */
-
-/* 
- * Alineación de Iconos:
- * Asegura que los iconos de Google Material se centren perfectamente
- * tanto vertical como horizontalmente respecto al texto acompañante.
- */
-.material-symbols-outlined {
-  vertical-align: middle;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+@media (max-width:480px) {
+  .dashboard-heading { align-items:flex-start; flex-direction:column; }
+  .dashboard-heading-actions { width:100%; }
+  .dashboard-heading-actions>* { flex:1; }
+  .dashboard-filters { align-items:stretch; flex-direction:column; }
+  .dashboard-pagination { align-items:flex-start; flex-direction:column; }
 }

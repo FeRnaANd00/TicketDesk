@@ -1,10 +1,8 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { CompleteProfileComponent } from './pages/complete-profile/complete-profile.component';
 import { AppShellComponent } from './layouts/app-shell/app-shell.component';
-import { SectionPlaceholderComponent } from './pages/section-placeholder/section-placeholder.component';
 import { authGuard } from './auth.guard';
 import { profileGuard } from './profile.guard';
 import { roleGuard } from './role.guard';
@@ -49,26 +47,24 @@ export const routes: Routes = [
       {
         // El Dashboard está disponible para administradores y técnicos.
         path: 'dashboard',
-        component: DashboardComponent,
+        loadComponent: () => import('./pages/dashboard/dashboard.component')
+          .then((module) => module.DashboardComponent),
         canActivate: [roleGuard],
         data: { roles: ['admin', 'technician'] },
         title: 'TicketDesk - Dashboard'
       },
       {
-        // Lista los tickets creados por la persona autenticada.
+        // Lista los tickets propios y la cola visible para administradores y técnicos.
         path: 'tickets',
         loadComponent: () => import('./pages/tickets/tickets.component')
           .then((module) => module.TicketsComponent),
         title: 'TicketDesk - Tickets'
       },
       {
-        // Destino temporal del menú hasta implementar la edición del perfil.
+        // Muestra la identidad y el resumen personal de tickets del usuario.
         path: 'profile',
-        component: SectionPlaceholderComponent,
-        data: {
-          title: 'Perfil',
-          description: 'La consulta y edición del perfil se implementarán a continuación.'
-        },
+        loadComponent: () => import('./pages/profile/profile.component')
+          .then((module) => module.ProfileComponent),
         title: 'TicketDesk - Perfil'
       },
       {

@@ -1,0 +1,67 @@
+<main class="profile-page">
+  <header class="profile-page-heading">
+    <div class="profile-brand" aria-label="TicketDesk">
+      <span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span>
+      <span>TicketDesk</span>
+    </div>
+    <p class="profile-eyebrow">Mi espacio</p>
+    <h1>Perfil</h1>
+    <p class="profile-subtitle">Tu información y un resumen de tu actividad en la mesa de ayuda.</p>
+  </header>
+
+  <section *ngIf="isLoading" class="profile-state" role="status">
+    <span class="profile-spinner" aria-hidden="true"></span>
+    <p>Cargando tu perfil...</p>
+  </section>
+
+  <section *ngIf="!isLoading && loadError" class="profile-state profile-error" role="alert">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    <h2>No pudimos cargar el perfil</h2>
+    <p>{{ loadError }}</p>
+    <button type="button" class="profile-retry-button" (click)="loadProfile()">Intentar de nuevo</button>
+  </section>
+
+  <div *ngIf="!isLoading && !loadError" class="profile-content">
+    <section class="profile-identity-card" aria-label="Información del perfil">
+      <div class="profile-identity">
+        <div class="profile-avatar" aria-hidden="true">{{ profileInitials }}</div>
+        <div class="profile-identity-copy">
+          <span class="profile-role">{{ roleLabel }}</span>
+          <h2>{{ username }}</h2>
+          <p>{{ department || 'Departamento no especificado' }}</p>
+          <a *ngIf="email" [href]="'mailto:' + email">{{ email }}</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-metrics" aria-label="Actividad de tickets">
+      <article class="profile-metric-card">
+        <span class="profile-metric-icon profile-metric-reported material-symbols-outlined" aria-hidden="true">
+          confirmation_number
+        </span>
+        <div>
+          <p>Tickets que reporté</p>
+          <strong>{{ reportedTicketCount }}</strong>
+          <span>Total registrado en tu cuenta</span>
+        </div>
+      </article>
+
+      <article *ngIf="role === 'technician'" class="profile-metric-card">
+        <span class="profile-metric-icon profile-metric-resolved material-symbols-outlined" aria-hidden="true">
+          task_alt
+        </span>
+        <div>
+          <p>Tickets resueltos</p>
+          <strong>{{ resolvedTicketCount }}</strong>
+          <span>Cerrados que están asignados a tu perfil</span>
+        </div>
+      </article>
+    </section>
+
+    <a class="profile-tickets-link" routerLink="/tickets">
+      <span class="material-symbols-outlined" aria-hidden="true">list_alt</span>
+      Ir a mis tickets
+      <span class="material-symbols-outlined profile-link-arrow" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+</main>

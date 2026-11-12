@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -73,11 +73,11 @@ export class NewTicketComponent implements OnInit {
   createdTicketNumber = '';
   /** Nombre de la persona que solicita el ticket, obtenido de su perfil. */
   private requesterName = 'Usuario';
-
   /** Recibe la navegación y el servicio centralizado de tickets. */
   constructor(
     private router: Router,
-    private ticketsService: TicketsService
+    private ticketsService: TicketsService,
+    private changeDetector: ChangeDetectorRef
   ) {}
 
   /** Espera Auth y carga la identidad solicitante y el directorio de técnicos. */
@@ -131,11 +131,15 @@ export class NewTicketComponent implements OnInit {
           };
         })
         .sort((first, second) => first.username.localeCompare(second.username, 'es'));
+      if (!this.technicians.some((technician) => technician.uid === this.selectedTechnicianId)) {
+        this.selectedTechnicianId = '';
+      }
     } catch (error) {
       console.error('Error al cargar los técnicos disponibles:', error);
       this.technicianLoadError = 'No se pudo cargar la lista de técnicos.';
     } finally {
       this.isLoadingTechnicians = false;
+      this.changeDetector.markForCheck();
     }
   }
 

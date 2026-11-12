@@ -1,0 +1,214 @@
+<div class="ticket-conversation-backdrop" role="presentation" (click)="close()">
+  <section
+    class="ticket-conversation-window"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="conversation-title"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Presenta el ticket como una ficha compacta, sin exportación ni reapertura. -->
+    <header class="conversation-ticket-overview">
+      <div class="conversation-ticket-overview-content">
+        <div class="conversation-ticket-badges">
+          <span class="conversation-ticket-number">{{ getTicketNumber() }}</span>
+          <span
+            class="conversation-ticket-status"
+            [ngClass]="'conversation-ticket-status-' + getTicketStatusTone()"
+          >
+            <span class="conversation-status-dot" aria-hidden="true"></span>
+            {{ getTicketStatusLabel() }}
+          </span>
+        </div>
+        <div class="conversation-ticket-secondary">
+          <span class="conversation-priority-badge" [ngClass]="'conversation-priority-' + ticket.prioridad">
+            {{ getPriorityLabel() }}
+          </span>
+          <span>
+            <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+            {{ getTicketStatusDetail() }}
+          </span>
+        </div>
+        <h2 id="conversation-title">{{ ticket.titulo }}</h2>
+        <p class="conversation-ticket-summary">
+          {{ ticket.categoria }} · Solicitante: {{ ticket.clienteNombre || 'Usuario' }}
+        </p>
+      </div>
+      <button type="button" class="conversation-close" aria-label="Cerrar conversación" (click)="close()">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <!-- La solicitud inicial y las respuestas se presentan como una línea de tiempo. -->
+    <section class="conversation-history" aria-label="Historial de mensajes">
+      <div class="conversation-history-heading">
+        <div>
+          <h3>Conversación del ticket</h3>
+          <p>Seguimiento, preguntas y soluciones en un solo lugar.</p>
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="conversation-state" role="status">
+        <span class="conversation-spinner" aria-hidden="true"></span>
+        <span>Cargando conversación...</span>
+      </div>
+      <div *ngIf="!isLoading && loadError" class="conversation-state conversation-error" role="alert">
+        <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+        <span>{{ loadError }}</span>
+      </div>
+      <div
+        *ngIf="!isLoading && !loadError"
+        #messagesList
+        class="conversation-messages"
+        aria-live="polite"
+      >
+        <article class="conversation-message-row conversation-original-row">
+          <span class="conversation-avatar conversation-original-avatar" aria-hidden="true">
+            {{ getInitials(ticket.clienteNombre || 'Solicitante') }}
+          </span>
+          <div class="conversation-message-bubble conversation-original-card">
+            <header class="conversation-message-meta">
+              <span class="conversation-meta-chip">
+                Creado:
+                <time>
+                  {{ getTicketCreationDate() ? (getTicketCreationDate() | date: 'dd/MM/yyyy, HH:mm') : 'Fecha no disponible' }}
+                </time>
+              </span>
+              <span class="conversation-meta-chip">
+                por <strong>{{ ticket.clienteNombre || 'Solicitante' }}</strong>
+              </span>
+              <span class="conversation-request-tag">Solicitud inicial</span>
+            </header>
+            <h4>{{ ticket.titulo }}</h4>
+            <p>{{ ticket.descripcion }}</p>
+            <div class="conversation-request-details">
+              <span class="conversation-detail-chip">
+                <span class="material-symbols-outlined" aria-hidden="true">sell</span>
+                {{ ticket.categoria }}
+              </span>
+              <span *ngFor="let attachment of ticket.adjuntos || []" class="conversation-detail-chip">
+                <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+                {{ attachment.nombre }}
+              </span>
+              <span *ngIf="!ticket.adjuntos || ticket.adjuntos.length === 0" class="conversation-detail-muted">
+                Sin archivos adjuntos
+              </span>
+            </div>
+          </div>
+        </article>
+        <p *ngIf="messages.length === 0" class="conversation-empty-replies" role="status">
+          Aún no hay respuestas. Puedes iniciar la conversación.
+        </p>
+        <article
+          *ngFor="let message of messages; trackBy: trackByMessageId"
+          class="conversation-message-row"
+          [class.conversation-message-row-mine]="message.authorId === currentUserId"
+        >
+          <span class="conversation-avatar" aria-hidden="true">{{ getInitials(message.authorName) }}</span>
+          <div
+            class="conversation-message-bubble"
+            [class.conversation-message-solution]="message.type === 'solution'"
+          >
+            <header class="conversation-message-meta">
+              <span class="conversation-meta-chip">
+                Creado:
+                <time>{{ getMessageDate(message) ? (getMessageDate(message) | date: 'dd/MM/yyyy, HH:mm') : 'Ahora' }}</time>
+              </span>
+              <span class="conversation-meta-chip">
+                por <strong>{{ message.authorName }}</strong>
+              </span>
+              <span class="conversation-role">{{ getRoleLabel(message.authorRole) }}</span>
+              <span *ngIf="message.type === 'solution'" class="conversation-solution-tag">
+                <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+                Solución de soporte
+              </span>
+              <button
+                *ngIf="canEditMessage(message) && editingMessageId !== message.id"
+                type="button"
+                class="conversation-edit-icon"
+                [disabled]="isReadOnly || isSavingEdit || editingMessageId !== null"
+                [attr.aria-label]="'Editar mensaje de ' + message.authorName"
+                (click)="startEditingMessage(message)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+              </button>
+            </header>
+            <ng-container *ngIf="editingMessageId === message.id; else savedMessage">
+              <textarea
+                class="conversation-edit-textarea"
+                [name]="'edit-message-' + message.id"
+                [(ngModel)]="editDraft"
+                [maxlength]="messageLimit"
+                rows="3"
+                aria-label="Editar mensaje"
+                [disabled]="isSavingEdit || isReadOnly"
+              ></textarea>
+              <p *ngIf="editError" class="conversation-send-error" role="alert">{{ editError }}</p>
+              <div class="conversation-actions">
+                <button
+                  type="button"
+                  class="conversation-send-message"
+                  [disabled]="isSavingEdit"
+                  (click)="cancelEditingMessage()"
+                >Cancelar</button>
+                <button
+                  type="button"
+                  class="conversation-send-solution"
+                  [disabled]="isSavingEdit || isReadOnly || !editDraft.trim() || editDraft.trim().length > messageLimit"
+                  (click)="saveMessageEdit(message)"
+                >{{ isSavingEdit ? 'Guardando...' : 'Guardar' }}</button>
+              </div>
+            </ng-container>
+            <ng-template #savedMessage>
+              <p>{{ message.text }}</p>
+            </ng-template>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- El compositor crea mensajes o soluciones sin modificar la descripción del ticket. -->
+    <section class="conversation-composer" aria-label="Escribir un mensaje">
+      <label for="ticket-conversation-draft">Tu mensaje</label>
+      <textarea
+        id="ticket-conversation-draft"
+        name="ticketConversationDraft"
+        [(ngModel)]="draft"
+        [maxlength]="messageLimit"
+        rows="3"
+        placeholder="Escribe una pregunta, actualización o solución..."
+        [disabled]="isSending || isLoading || !!loadError || isReadOnly"
+      ></textarea>
+      <p *ngIf="isReadOnly" class="conversation-readonly-notice" role="status">
+        Ticket cerrado. Puedes consultar la conversación; solo el administrador puede editarla o responder.
+      </p>
+      <div class="conversation-composer-footer">
+        <div>
+          <p *ngIf="sendStatus" class="conversation-send-status" role="status">{{ sendStatus }}</p>
+          <p *ngIf="sendError" class="conversation-send-error" role="alert">{{ sendError }}</p>
+          <span class="conversation-character-count">{{ draft.length }} / {{ messageLimit }}</span>
+        </div>
+        <div class="conversation-actions">
+          <button
+            type="button"
+            class="conversation-send-message"
+            [disabled]="isSending || !draft.trim() || !!loadError || isReadOnly"
+            (click)="sendMessage('message')"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">send</span>
+            {{ isSending ? 'Enviando...' : 'Enviar mensaje' }}
+          </button>
+          <button
+            *ngIf="canSendSolution"
+            type="button"
+            class="conversation-send-solution"
+            [disabled]="isSending || !draft.trim() || !!loadError || isReadOnly"
+            (click)="sendMessage('solution')"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+            {{ isSending ? 'Enviando...' : 'Enviar solución y cerrar ticket' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </section>
+</div>

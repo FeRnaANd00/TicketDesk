@@ -1,0 +1,51 @@
+:host { display:block; }
+
+.profile-page {
+  --ink:#121c2a;
+  --muted:#667085;
+  --red:#a20d19;
+  --line:#e6eaf1;
+  width:min(100%,72rem);
+  margin:0 auto;
+  padding:clamp(1rem,3vw,2.5rem);
+  color:var(--ink);
+}
+
+.profile-page-heading { margin-bottom:1.4rem; }
+.profile-brand { display:inline-flex; align-items:center; gap:.5rem; margin-bottom:1.3rem; color:#27313f; font-size:.82rem; font-weight:800; }
+.profile-brand .material-symbols-outlined { display:grid; width:2.25rem; height:2.25rem; place-items:center; color:#fff; background:#bb0112; border-radius:.7rem; font-size:1.2rem; }
+.profile-eyebrow { margin:0 0 .3rem; color:var(--red); font-size:.7rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+.profile-page-heading h1 { margin:0; font-size:clamp(1.7rem,4vw,2.2rem); letter-spacing:-.04em; }
+.profile-subtitle { margin:.45rem 0 0; color:var(--muted); font-size:.86rem; line-height:1.55; }
+
+.profile-content { display:grid; gap:1rem; }
+.profile-identity-card,.profile-metric-card { background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
+.profile-identity-card { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:clamp(1.1rem,3vw,1.6rem); }
+.profile-identity { display:flex; min-width:0; align-items:center; gap:1rem; }
+.profile-avatar { display:grid; width:4rem; height:4rem; flex:0 0 auto; place-items:center; color:#fff; background:linear-gradient(145deg,#c31422,#820b14); border-radius:1.15rem; font-size:1.1rem; font-weight:800; }
+.profile-identity-copy { min-width:0; }
+.profile-role { display:inline-flex; margin-bottom:.3rem; padding:.22rem .55rem; color:#9c0a18; background:#fff1f0; border-radius:99px; font-size:.67rem; font-weight:750; }
+.profile-identity-copy h2 { overflow-wrap:anywhere; margin:0; font-size:clamp(1.1rem,3vw,1.45rem); letter-spacing:-.025em; }
+.profile-identity-copy p,.profile-identity-copy a { display:block; margin:.25rem 0 0; color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; }
+.profile-identity-copy a { color:#9c0a18; text-decoration:none; }
+.profile-identity-copy a:hover { text-decoration:underline; }
+.profile-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)); gap:.8rem; }
+.profile-metric-card { display:flex; min-height:7.5rem; align-items:center; gap:.85rem; padding:1rem; }
+.profile-metric-icon { display:grid; width:2.8rem; height:2.8rem; flex:0 0 auto; place-items:center; border-radius:.85rem; font-size:1.35rem; }
+.profile-metric-reported { color:#a20d19; background:#fff1f0; }
+.profile-metric-resolved { color:#397355; background:#e9f6ef; }
+.profile-metric-card p { margin:0; color:var(--muted); font-size:.76rem; font-weight:650; }
+.profile-metric-card strong { display:block; margin-top:.12rem; font-size:1.5rem; line-height:1.2; }
+.profile-metric-card div>span { display:block; margin-top:.2rem; color:#8791a1; font-size:.68rem; }
+
+.profile-tickets-link { display:inline-flex; min-height:2.7rem; width:max-content; max-width:100%; align-items:center; gap:.5rem; padding:.65rem .85rem; color:#9c0a18; background:#fff4f3; border:1px solid #bb011226; border-radius:.75rem; font-size:.8rem; font-weight:750; text-decoration:none; }
+.profile-tickets-link:hover { background:#ffe9e7; }
+.profile-tickets-link>.material-symbols-outlined { font-size:1.1rem; }
+
+.profile-state { display:flex; min-height:14rem; flex-direction:column; align-items:center; justify-content:center; gap:.55rem; padding:2rem 1rem; color:#778293; text-align:center; }
+.profile-state p { max-width:34rem; margin:0; font-size:.84rem; line-height:1.55; }
+.profile-state h2 { margin:.2rem 0 0; color:var(--ink); font-size:1.05rem; }
+.profile-error>.material-symbols-outlined { color:var(--red); font-size:2rem; }
+.profile-spinner { width:2rem; height:2rem; border:3px solid #f4d8da; border-top-color:var(--red); border-radius:50%; animation:profile-spin .8s linear infinite; }
+.profile-retry-button { min-height:2.5rem; margin-top:.35rem; padding:.55rem .85rem; color:#fff; background:var(--red); border:0; border-radius:.7rem; cursor:pointer; font:inherit; font-size:.78rem; font-weight:750; }
+@keyframes profile-spin { to { transform:rotate(360deg); } }

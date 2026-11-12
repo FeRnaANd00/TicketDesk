@@ -38,7 +38,7 @@ export class WorkspaceSidebarComponent {
     exact: boolean;
     roles: UserRole[];
   }> = [
-    { label: 'Dashboard', icon: 'space_dashboard', route: '/dashboard', exact: true, roles: ['admin', 'technician'] },
+    { label: 'Home', icon: 'space_dashboard', route: '/dashboard', exact: true, roles: ['admin', 'technician'] },
     { label: 'Tickets', icon: 'confirmation_number', route: '/tickets', exact: false, roles: ['admin', 'technician', 'user'] },
     { label: 'Perfil', icon: 'person', route: '/profile', exact: false, roles: ['admin', 'technician', 'user'] },
     { label: 'Usuarios', icon: 'group', route: '/users', exact: false, roles: ['admin'] },

@@ -4,8 +4,8 @@
   <header class="tickets-heading">
     <div>
       <p class="tickets-eyebrow">Mesa de ayuda</p>
-      <h1>Mis tickets</h1>
-      <p>Consulta y da seguimiento a las incidencias que has reportado.</p>
+      <h1>{{ pageTitle }}</h1>
+      <p>{{ pageDescription }}</p>
     </div>
     <a class="create-ticket-button" routerLink="/new-ticket">
       <span class="material-symbols-outlined" aria-hidden="true">add</span>
@@ -29,7 +29,7 @@
     <span>{{ permissionError }}</span>
   </div>
 
-  <!-- Permite buscar tickets propios y limitar la tabla por estado. -->
+  <!-- Permite buscar tickets y combinar los filtros de estado y alcance. -->
   <section class="tickets-list-card" aria-label="Listado de tickets">
     <div class="list-toolbar">
       <label class="search-control">
@@ -44,36 +44,35 @@
       </label>
 
       <div class="status-dropdown">
-        <span id="ticket-status-label" class="visually-hidden">Filtrar por estado</span>
+        <span id="ticket-filter-label" class="visually-hidden">Filtros de tickets</span>
         <button
           type="button"
           class="status-filter-trigger"
-          aria-haspopup="listbox"
-          aria-labelledby="ticket-status-label"
-          aria-controls="ticket-status-options"
-          [attr.aria-expanded]="isStatusMenuOpen"
-          (click)="isStatusMenuOpen = !isStatusMenuOpen"
+          aria-labelledby="ticket-filter-label"
+          aria-controls="ticket-filter-options"
+          [attr.aria-expanded]="isFilterMenuOpen"
+          (click)="toggleFilterMenu()"
         >
-          <span>{{ statusFilter }}</span>
+          <span>{{ statusFilter }}<ng-container *ngIf="canManageTickets"> · {{ ticketScopeLabel }}</ng-container></span>
           <span
             class="material-symbols-outlined status-filter-chevron"
             aria-hidden="true"
           >expand_more</span>
         </button>
         <div
-          *ngIf="isStatusMenuOpen"
-          id="ticket-status-options"
+          *ngIf="isFilterMenuOpen"
+          id="ticket-filter-options"
           class="status-filter-options"
-          role="listbox"
-          aria-labelledby="ticket-status-label"
+          role="group"
+          aria-labelledby="ticket-filter-label"
         >
+          <strong>Estado</strong>
           <button
             *ngFor="let status of statusOptions"
             type="button"
             class="status-filter-option"
             [class.status-filter-option-active]="statusFilter === status"
-            role="option"
-            [attr.aria-selected]="statusFilter === status"
+            [attr.aria-pressed]="statusFilter === status"
             (click)="selectStatusFilter(status)"
           >
             <span>{{ status }}</span>
@@ -83,6 +82,33 @@
               aria-hidden="true"
             >check</span>
           </button>
+
+          <ng-container *ngIf="canManageTickets">
+            <strong>Asignación</strong>
+            <p *ngIf="statusFilter === 'Abierto'" class="ticket-filter-disabled-note">
+              Los tickets abiertos muestran la cola de todos los técnicos.
+            </p>
+            <button
+              type="button"
+              class="status-filter-option"
+              [class.status-filter-option-active]="ticketScope === 'mine'"
+              [disabled]="statusFilter === 'Abierto'"
+              [attr.aria-pressed]="ticketScope === 'mine'"
+              (click)="selectTicketScope('mine')"
+            >
+              <span>Asignados a mí</span>
+            </button>
+            <button
+              type="button"
+              class="status-filter-option"
+              [class.status-filter-option-active]="ticketScope === 'all'"
+              [disabled]="statusFilter === 'Abierto'"
+              [attr.aria-pressed]="ticketScope === 'all'"
+              (click)="selectTicketScope('all')"
+            >
+              <span>Todos los técnicos</span>
+            </button>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -90,7 +116,7 @@
     <!-- Muestra una señal de actividad mientras se consulta Firestore. -->
     <div *ngIf="isLoading" class="list-state" role="status">
       <span class="loading-spinner" aria-hidden="true"></span>
-      <p>Cargando tus tickets...</p>
+      <p>Cargando tickets...</p>
     </div>
 
     <!-- Informa del fallo y deja disponible un reintento explícito. -->
@@ -102,17 +128,27 @@
 
     <!-- Distingue entre una cuenta sin tickets y una búsqueda sin coincidencias. -->
     <div
-      *ngIf="!isLoading && !loadError && tickets.length === 0"
+      *ngIf="!isLoading && !loadError && visibleTickets.length === 0"
       class="list-state"
       role="status"
     >
       <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
-      <h2>Aún no has creado tickets</h2>
-      <p>Cuando reportes una incidencia, aparecerá aquí para que puedas consultarla.</p>
-      <a class="secondary-button" routerLink="/new-ticket">Crear mi primer ticket</a>
+      <h2>
+        {{ canManageTickets
+          ? (ticketScope === 'mine' ? 'No tienes tickets asignados' : 'Aún no hay tickets')
+          : 'Aún no has creado tickets' }}
+      </h2>
+      <p>
+        {{ canManageTickets
+          ? (ticketScope === 'mine'
+            ? 'Al asignarte una incidencia, aparecerá en esta lista.'
+            : 'Los tickets registrados aparecerán en este listado.')
+          : 'Cuando reportes una incidencia, aparecerá aquí para que puedas consultarla.' }}
+      </p>
+      <a *ngIf="!canManageTickets" class="secondary-button" routerLink="/new-ticket">Crear mi primer ticket</a>
     </div>
     <div
-      *ngIf="!isLoading && !loadError && tickets.length > 0 && filteredTickets.length === 0"
+      *ngIf="!isLoading && !loadError && visibleTickets.length > 0 && filteredTickets.length === 0"
       class="list-state"
       role="status"
     >
@@ -132,6 +168,7 @@
             <th scope="col">ID</th>
             <th scope="col">Título</th>
             <th scope="col">Solicitante</th>
+            <th scope="col">Técnico asignado</th>
             <th scope="col">Categoría</th>
             <th scope="col">Prioridad</th>
             <th scope="col">Estado</th>
@@ -147,6 +184,7 @@
               <span>{{ ticket.descripcion }}</span>
             </td>
             <td>{{ ticket.clienteNombre || 'Usuario' }}</td>
+            <td>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
             <td>{{ ticket.categoria }}</td>
             <td>
               <span class="priority-badge" [ngClass]="getPriorityClass(ticket.prioridad)">
@@ -156,7 +194,7 @@
             <td>
               <span
                 class="status-badge"
-                [ngClass]="'status-' + getDisplayStatus(ticket).toLocaleLowerCase('es')"
+                  [ngClass]="getDisplayStatusClass(ticket)"
               >
                 {{ getDisplayStatus(ticket) }}
               </span>
@@ -310,6 +348,7 @@
         </div>
 
         <div
+          *ngIf="currentUserRole === 'admin'"
           class="ticket-edit-field"
           [class.ticket-edit-field-open]="openTicketEditDropdown === 'technician'"
         >
@@ -372,10 +411,10 @@
           </div>
         </div>
 
-        <p *ngIf="isLoadingTechnicians" class="ticket-edit-hint" role="status">
+        <p *ngIf="currentUserRole === 'admin' && isLoadingTechnicians" class="ticket-edit-hint" role="status">
           Cargando técnicos disponibles...
         </p>
-        <p *ngIf="technicianLoadError" class="ticket-edit-error" role="alert">
+        <p *ngIf="currentUserRole === 'admin' && technicianLoadError" class="ticket-edit-error" role="alert">
           {{ technicianLoadError }}
           <button type="button" class="ticket-retry-button" (click)="loadTechnicians()">
             Reintentar
@@ -417,7 +456,16 @@
         </ng-container>
         <ng-template #detailsActions>
           <button
-            *ngIf="canManageTickets"
+            type="button"
+            class="ticket-cancel-edit-button"
+            [disabled]="!canViewConversation(ticket)"
+            (click)="openConversation(ticket)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">forum</span>
+            Conversación
+          </button>
+          <button
+            *ngIf="canEditTicket(ticket)"
             type="button"
             class="ticket-save-edit-button"
             (click)="beginTicketEdit(ticket)"
@@ -425,8 +473,47 @@
             <span class="material-symbols-outlined" aria-hidden="true">edit</span>
             Editar ticket
           </button>
+          <button
+            *ngIf="canSelfAssignTicket(ticket)"
+            type="button"
+            class="ticket-save-edit-button"
+            [disabled]="isSavingTicket"
+            (click)="selfAssignTicket(ticket)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
+            {{ isSavingTicket ? 'Asignando...' : 'Asignarme' }}
+          </button>
+          <button
+            *ngIf="!canEditTicket(ticket) && !canSelfAssignTicket(ticket)"
+            type="button"
+            class="ticket-save-edit-button"
+            disabled
+            aria-disabled="true"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">edit_off</span>
+            Editar ticket
+          </button>
         </ng-template>
       </footer>
+      <p *ngIf="ticketEditError && !isEditingTicket" class="ticket-edit-error" role="alert">
+        {{ ticketEditError }}
+      </p>
+      <p *ngIf="!canViewConversation(ticket)" class="ticket-edit-hint" role="status">
+        Solo el solicitante, el técnico asignado o un administrador pueden ver la conversación.
+      </p>
+      <p
+        *ngIf="!canEditTicket(ticket) && !canSelfAssignTicket(ticket)"
+        class="ticket-edit-hint"
+        role="status"
+      >
+        {{ getTicketEditRestrictionMessage(ticket) }}
+      </p>
     </section>
   </div>
+  <app-ticket-conversation
+    *ngIf="conversationTicket as conversation"
+    [ticket]="conversation"
+    (closed)="closeConversation()"
+    (resolved)="markTicketResolved(conversation)"
+  ></app-ticket-conversation>
 </main>

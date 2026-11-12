@@ -90,7 +90,7 @@
 
         <!-- En todos los dispositivos se abre el popup; en teléfonos se inicia antes de operaciones asíncronas. -->
         <button (click)="loginWithGoogle()" [disabled]="isLoading || isGoogleLoading" type="button" class="w-full py-3 rounded-xl bg-white border border-gray-300 text-gray-700 font-semibold shadow-sm transition-all flex items-center justify-center gap-3 hover:bg-gray-50 active:scale-[0.98] disabled:bg-gray-100">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" class="w-5 h-5"/>
+          <span class="google-provider-mark" aria-hidden="true">G</span>
           <span>{{ isGoogleLoading ? 'Conectando con Google...' : 'Continuar con Google' }}</span>
         </button>
 

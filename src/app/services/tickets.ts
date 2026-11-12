@@ -11,8 +11,15 @@ import {
   deleteDoc, 
   doc, 
   query, 
-  where
+  where,
+  Query,
+  orderBy,
+  onSnapshot,
+  Unsubscribe,
+  serverTimestamp,
+  writeBatch
 } from 'firebase/firestore';
+import { NewTicketMessage, TicketMessage } from '../models/ticket-message';
 
 /** Resultado de crear un ticket, incluyendo su referencia y número visible. */
 export interface CreatedTicket {
@@ -45,14 +52,70 @@ export class TicketsService {
 
   /** Obtiene únicamente los tickets creados por la persona autenticada. */
   async listarPropios(clienteId: string): Promise<Ticket[]> {
-    const q = query(
+    return this.listarTickets(query(
       collection(db, this.collectionName),
       where('clienteId', '==', clienteId)
+    ));
+  }
+
+  /** Obtiene tickets asignados al técnico autenticado, incluidos los cerrados históricos. */
+  async listarAsignados(tecnicoId: string): Promise<Ticket[]> {
+    return this.listarTickets(query(
+      collection(db, this.collectionName),
+      where('tecnicoAsignadoId', '==', tecnicoId)
+    ));
+  }
+
+  /** Obtiene todos los tickets para el resumen administrativo global. */
+  async listarTodos(): Promise<Ticket[]> {
+    return this.listarTickets(collection(db, this.collectionName));
+  }
+
+  /** Observa en tiempo real los mensajes cronológicos de un ticket. */
+  escucharMensajes(
+    ticketId: string,
+    onMessages: (messages: TicketMessage[]) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe {
+    const messageQuery = query(
+      collection(db, this.collectionName, ticketId, 'messages'),
+      orderBy('createdAt', 'asc')
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(ticketDocument => ({ id: ticketDocument.id, ...ticketDocument.data() } as Ticket))
-      .sort((first, second) => this.getCreationTime(second) - this.getCreationTime(first));
+    return onSnapshot(
+      messageQuery,
+      snapshot => onMessages(snapshot.docs.map(messageDocument => ({
+        ...messageDocument.data(),
+        id: messageDocument.id
+      } as TicketMessage))),
+      onError
+    );
+  }
+
+  /** Agrega un mensaje y cierra atómicamente el ticket al enviar una solución. */
+  async agregarMensaje(
+    ticketId: string,
+    message: NewTicketMessage
+  ): Promise<void> {
+    const batch = writeBatch(db);
+    const messageReference = doc(collection(db, this.collectionName, ticketId, 'messages'));
+    batch.set(messageReference, { ...message, createdAt: serverTimestamp() });
+    if (message.type === 'solution') {
+      batch.update(doc(db, this.collectionName, ticketId), { estado: 'cerrado' });
+    }
+    await batch.commit();
+  }
+
+  /** Actualiza solo el texto de un mensaje existente; Firestore valida quién puede editarlo. */
+  async editarMensaje(ticketId: string, messageId: string, text: string): Promise<void> {
+    const updatedText = text.trim();
+    if (!updatedText || updatedText.length > 4000) {
+      throw new Error('El mensaje debe contener entre 1 y 4000 caracteres.');
+    }
+
+    await updateDoc(
+      doc(db, this.collectionName, ticketId, 'messages', messageId),
+      { text: updatedText }
+    );
   }
 
   /**
@@ -124,6 +187,28 @@ export class TicketsService {
     });
   }
 
+  /** Actualiza únicamente categoría y estado de un ticket abierto. */
+  async actualizarCategoriaEstado(
+    id: string,
+    categoria: Ticket['categoria'],
+    estado: Ticket['estado']
+  ): Promise<void> {
+    await updateDoc(doc(db, this.collectionName, id), { categoria, estado });
+  }
+
+  /** Un técnico puede tomarse un ticket abierto sin asignar; el estado pasa a en proceso. */
+  async autoasignarTicket(
+    id: string,
+    tecnicoId: string,
+    tecnicoNombre: string
+  ): Promise<void> {
+    await updateDoc(doc(db, this.collectionName, id), {
+      tecnicoAsignadoId: tecnicoId,
+      tecnicoAsignadoNombre: tecnicoNombre,
+      estado: 'en proceso'
+    });
+  }
+
   /**
    * Elimina un ticket de la base de datos permanentemente.
    * @param id El identificador del ticket a eliminar.
@@ -150,5 +235,13 @@ export class TicketsService {
     }
 
     return 0;
+  }
+
+  /** Convierte y ordena una consulta de tickets desde Firestore. */
+  private async listarTickets(ticketQuery: Query): Promise<Ticket[]> {
+    const snapshot = await getDocs(ticketQuery);
+    return snapshot.docs
+      .map(ticketDocument => ({ id: ticketDocument.id, ...ticketDocument.data() } as Ticket))
+      .sort((first, second) => this.getCreationTime(second) - this.getCreationTime(first));
   }
 }

@@ -1,125 +1,404 @@
-<!-- 
-  =============================================================================
-  VISTA DEL DASHBOARD - TICKETDESK (VERSION DE DIAGNÓSTICO)
-  =============================================================================
--->
-
-<main class="min-h-screen w-full p-4 md:p-8 bg-[#f8f9ff]">
-  
-  <!-- 
-    PRUEBA DE VIDA: 
-    Este texto debe aparecer SIEMPRE. Si no lo ves, el navegador está cargando 
-    una versión vieja del código.
-  -->
-  <div class="bg-yellow-200 text-black p-2 text-center font-bold mb-4 rounded-lg border-2 border-yellow-500">
-    SISTEMA ACTIVO: El usuario actual es {{ username }} (Rol: {{ userRole }})
+<main class="dashboard-page">
+  <div *ngIf="isLoading" class="dashboard-state" role="status">
+    <span class="dashboard-spinner" aria-hidden="true"></span>
+    <p>Cargando tu Dashboard...</p>
   </div>
 
-  <!-- BLOQUE 1: ESTADO DE CARGA -->
-  <div *ngIf="isLoading" class="flex flex-col items-center justify-center h-screen space-y-4">
-    <div class="w-12 h-12 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
-    <p class="text-gray-500 font-medium">Cargando tu espacio de trabajo...</p>
-  </div>
-
-  <!-- BLOQUE 2: ESTADO DE ERROR -->
-  <div *ngIf="!isLoading && hasError" class="flex flex-col items-center justify-center h-screen text-center p-6">
-    <span class="material-symbols-outlined text-6xl text-red-500 mb-4">warning</span>
-    <h2 class="text-2xl font-bold text-[#121c2a] mb-2">No pudimos cargar tu perfil</h2>
-    <p class="text-gray-600 max-w-md mb-6">
-      Error de conexión con Firebase.
-    </p>
-    <button (click)="loadUserProfile()" class="px-6 py-2 bg-[#bb0112] text-white font-bold rounded-xl hover:bg-red-700 transition-all">
+  <section *ngIf="!isLoading && loadError" class="dashboard-state dashboard-error" role="alert">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    <h1>No pudimos cargar el Dashboard</h1>
+    <p>{{ loadError }}</p>
+    <button type="button" class="dashboard-primary-button" (click)="loadDashboard()">
       Intentar de nuevo
     </button>
-  </div>
+  </section>
 
-  <!-- BLOQUE 3: CONTENIDO PRINCIPAL -->
-  <div *ngIf="!isLoading && !hasError" class="max-w-7xl mx-auto space-y-8">
-    
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+  <div *ngIf="!isLoading && !loadError" class="dashboard-content">
+    <header class="dashboard-heading">
       <div>
-        <h1 class="text-3xl font-bold text-[#121c2a]">¡Hola, {{ username }}! 👋</h1>
-        <p class="text-[#584237]">Bienvenido a tu centro de gestión de incidencias.</p>
+        <p class="dashboard-eyebrow">Dashboard</p>
+        <h1>Hola, {{ username }}</h1>
+        <p>Resumen de tus tickets y actividad de soporte.</p>
       </div>
-      <!-- Conserva el rol del contenido de Dashboard; la identidad global está en el shell. -->
-      <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase"
-           [ngClass]="{'bg-red-100 text-red-700': userRole === 'admin', 'bg-blue-100 text-blue-700': userRole === 'user'}">
-        <span class="material-symbols-outlined text-sm">shield</span>
-        {{ userRole }}
+      <div class="dashboard-heading-actions">
+        <a *ngIf="userRole === 'admin'" class="dashboard-secondary-button" routerLink="/users">
+          <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+          Usuarios
+        </a>
+        <button
+          type="button"
+          class="dashboard-primary-button refresh-button"
+          [disabled]="isLoading"
+          (click)="loadDashboard()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+          Actualizar
+        </button>
       </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
-        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
-          <span class="material-symbols-outlined text-2xl">confirmation_number</span>
+    <section class="dashboard-stat-grid" aria-label="Resumen de tickets">
+      <a
+        class="dashboard-stat-card"
+        routerLink="/tickets"
+        [queryParams]="getTicketListQueryParams('abierto')"
+      >
+        <div class="stat-icon stat-icon-open">
+          <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
         </div>
-        <h3 class="text-lg font-bold text-[#121c2a]">Mis Tickets</h3>
-        <p class="text-sm text-gray-500 mb-4">Gestiona las incidencias asignadas a tu nombre.</p>
-        <div class="flex justify-between items-center">
-          <span class="text-2xl font-bold text-[#121c2a]">0</span>
-          <span class="text-xs font-semibold text-blue-600 uppercase">Ver todo</span>
+        <div>
+          <p>Abiertos</p>
+          <strong>{{ openTicketCount }}</strong>
+          <span>Tickets que requieren atención</span>
+        </div>
+      </a>
+
+      <a
+        class="dashboard-stat-card"
+        routerLink="/tickets"
+        [queryParams]="getTicketListQueryParams('en proceso')"
+      >
+        <div class="stat-icon stat-icon-progress">
+          <span class="material-symbols-outlined" aria-hidden="true">pending_actions</span>
+        </div>
+        <div>
+          <p>En proceso</p>
+          <strong>{{ inProgressTicketCount }}</strong>
+          <span>Atención en curso</span>
+        </div>
+      </a>
+
+      <a
+        class="dashboard-stat-card"
+        routerLink="/tickets"
+        [queryParams]="getTicketListQueryParams('cerrado')"
+      >
+        <div class="stat-icon stat-icon-closed">
+          <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+        </div>
+        <div>
+          <p>Resueltos / Cerrados</p>
+          <strong>{{ closedTicketCount }}</strong>
+          <span>Histórico completo, sin límite de fecha</span>
+        </div>
+      </a>
+    </section>
+
+    <section class="dashboard-profile-card" [class.dashboard-admin-profile]="userRole === 'admin'">
+      <div class="profile-heading">
+        <div class="profile-avatar" aria-hidden="true">{{ profileInitials }}</div>
+        <div class="profile-copy">
+          <p class="dashboard-eyebrow">{{ userRole === 'technician' ? 'Perfil del técnico' : 'Perfil' }}</p>
+          <h2>{{ username }}</h2>
+          <span>{{ userRole === 'technician' ? (department || 'Técnico de soporte') : 'Administrador' }}</span>
+          <a *ngIf="email" [href]="'mailto:' + email">{{ email }}</a>
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
-        <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-all">
-          <span class="material-symbols-outlined text-2xl">pending_actions</span>
+      <div *ngIf="userRole === 'technician'" class="profile-stats">
+        <div>
+          <span>Tickets asignados a mí</span>
+          <strong>{{ myActiveTicketCount }} <small>activos</small></strong>
         </div>
-        <h3 class="text-lg font-bold text-[#121c2a]">Pendientes</h3>
-        <p class="text-sm text-gray-500 mb-4">Revisa los tickets que requieren atención urgente.</p>
-        <div class="flex justify-between items-center">
-          <span class="text-2xl font-bold text-[#121c2a]">0</span>
-          <span class="text-xs font-semibold text-orange-600 uppercase">Revisar</span>
+        <div>
+          <span>Tickets resueltos</span>
+          <strong>{{ myClosedTicketCount }} <small>históricos</small></strong>
         </div>
       </div>
+      <div *ngIf="userRole === 'admin'" class="admin-profile-note">
+        <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
+        Panel administrativo
+      </div>
+    </section>
 
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer">
-        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-all">
-          <span class="material-symbols-outlined text-2xl">support_agent</span>
+    <section class="dashboard-list-card" aria-label="Listado de tickets">
+      <header class="ticket-list-heading">
+        <div>
+          <div class="ticket-list-title">
+            <span class="material-symbols-outlined" aria-hidden="true">assignment_ind</span>
+            <h2>{{ ticketListTitle }}</h2>
+            <span class="ticket-count-pill">{{ ticketListCountLabel }}</span>
+          </div>
+          <p>{{ ticketListDescription }}</p>
         </div>
-        <h3 class="text-lg font-bold text-[#121c2a]">Soporte</h3>
-        <p class="text-sm text-gray-500 mb-4">Contacta con la administración del sistema.</p>
-        <div class="flex justify-between items-center">
-          <span class="text-xs font-semibold text-green-600 uppercase">Contactar</span>
+        <div class="dashboard-scope-toggle" role="group" aria-label="Alcance de tickets">
+          <button
+            type="button"
+            [class.dashboard-scope-active]="ticketScope === 'mine'"
+            [attr.aria-pressed]="ticketScope === 'mine'"
+            (click)="selectTicketScope('mine')"
+          >Asignados a mí</button>
+          <button
+            type="button"
+            [class.dashboard-scope-active]="ticketScope === 'all'"
+            [attr.aria-pressed]="ticketScope === 'all'"
+            (click)="selectTicketScope('all')"
+          >Todos los técnicos</button>
         </div>
-      </div>
-    </div>
+        <button
+          type="button"
+          class="dashboard-export-button"
+          [disabled]="filteredTickets.length === 0"
+          (click)="exportTickets()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">file_download</span>
+          Exportar lista
+        </button>
+      </header>
 
-    <div *ngIf="userRole === 'admin'" class="space-y-6">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="material-symbols-outlined text-red-600">admin_panel_settings</span>
-        <h2 class="text-2xl font-bold text-[#121c2a]">Panel de Control Administrativo</h2>
-      </div>
-      
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-8 rounded-3xl shadow-xl border-l-8 border-red-600 flex items-center justify-between group hover:bg-red-50 transition-all cursor-pointer" routerLink="/admin">
-          <div class="flex items-center gap-6">
-            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center shadow-inner">
-              <span class="material-symbols-outlined text-3xl">group</span>
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-[#121c2a]">Gestión de Agentes</h3>
-              <p class="text-gray-500">Asigna roles, crea usuarios y supervisa el equipo.</p>
+      <div class="dashboard-list-toolbar">
+        <label class="dashboard-search">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <span class="dashboard-visually-hidden">Buscar tickets</span>
+          <input
+            type="search"
+            name="dashboardTicketSearch"
+            placeholder="Buscar por ID, título, solicitante o categoría"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="currentPage = 1"
+          />
+        </label>
+
+        <div class="dashboard-filters">
+          <div class="dashboard-filter">
+            <button
+              type="button"
+              class="dashboard-filter-trigger"
+              aria-haspopup="listbox"
+              aria-label="Filtrar por estado"
+              [attr.aria-expanded]="openDropdown === 'status'"
+              (click)="toggleDropdown('status')"
+            >
+              <span>{{ statusFilterLabel }}</span>
+              <span
+                class="material-symbols-outlined dashboard-filter-chevron"
+                [class.dashboard-filter-chevron-open]="openDropdown === 'status'"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="openDropdown === 'status'"
+              class="dashboard-filter-options"
+              role="listbox"
+              aria-label="Estados disponibles"
+            >
+              <button
+                *ngFor="let option of statusOptions"
+                type="button"
+                class="dashboard-filter-option"
+                [class.dashboard-filter-option-active]="statusFilter === option.value"
+                role="option"
+                [attr.aria-selected]="statusFilter === option.value"
+                (click)="selectStatusFilter(option.value)"
+              >
+                <span>{{ option.label }}</span>
+                <span
+                  *ngIf="statusFilter === option.value"
+                  class="material-symbols-outlined dashboard-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
             </div>
           </div>
-          <span class="material-symbols-outlined text-gray-400 group-hover:text-red-600 transition-all text-3xl">arrow_forward_ios</span>
-        </div>
 
-        <div class="bg-white p-8 rounded-3xl shadow-xl border-l-8 border-gray-800 flex items-center justify-between group hover:bg-gray-50 transition-all cursor-pointer">
-          <div class="flex items-center gap-6">
-            <div class="w-16 h-16 bg-gray-100 text-gray-800 rounded-full flex items-center justify-center shadow-inner">
-              <span class="material-symbols-outlined text-3xl">analytics</span>
-            </div>
-            <div>
-              <h3 class="text-xl font-bold text-[#121c2a]">Reportes Globales</h3>
-              <p class="text-gray-500">Estadísticas de resolución y rendimiento del sistema.</p>
+          <div class="dashboard-filter">
+            <button
+              type="button"
+              class="dashboard-filter-trigger"
+              aria-haspopup="listbox"
+              aria-label="Filtrar por prioridad"
+              [attr.aria-expanded]="openDropdown === 'priority'"
+              (click)="toggleDropdown('priority')"
+            >
+              <span>{{ priorityFilterLabel }}</span>
+              <span
+                class="material-symbols-outlined dashboard-filter-chevron"
+                [class.dashboard-filter-chevron-open]="openDropdown === 'priority'"
+                aria-hidden="true"
+              >expand_more</span>
+            </button>
+            <div
+              *ngIf="openDropdown === 'priority'"
+              class="dashboard-filter-options"
+              role="listbox"
+              aria-label="Prioridades disponibles"
+            >
+              <button
+                *ngFor="let option of priorityOptions"
+                type="button"
+                class="dashboard-filter-option"
+                [class.dashboard-filter-option-active]="priorityFilter === option.value"
+                role="option"
+                [attr.aria-selected]="priorityFilter === option.value"
+                (click)="selectPriorityFilter(option.value)"
+              >
+                <span>{{ option.label }}</span>
+                <span
+                  *ngIf="priorityFilter === option.value"
+                  class="material-symbols-outlined dashboard-filter-check"
+                  aria-hidden="true"
+                >check</span>
+              </button>
             </div>
           </div>
-          <span class="material-symbols-outlined text-gray-400 group-hover:text-gray-800 transition-all text-3xl">arrow_forward_ios</span>
         </div>
       </div>
-    </div>
 
+      <div *ngIf="ticketsInScope.length === 0" class="dashboard-empty-state" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">inbox</span>
+        <h3>{{ ticketScope === 'mine' ? 'No tienes tickets asignados' : 'Aún no hay tickets' }}</h3>
+        <p>
+          {{ ticketScope === 'mine'
+            ? 'Cuando te asignen una incidencia, aparecerá aquí.'
+            : 'Los tickets registrados aparecerán en este listado.' }}
+        </p>
+      </div>
+      <div
+        *ngIf="ticketsInScope.length > 0 && filteredTickets.length === 0"
+        class="dashboard-empty-state"
+        role="status"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
+        <h3>No encontramos tickets</h3>
+        <p>Prueba con otro término o cambia los filtros.</p>
+      </div>
+
+      <div *ngIf="filteredTickets.length > 0" class="dashboard-table-scroll">
+        <table class="dashboard-tickets-table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Título</th>
+              <th scope="col">Solicitante</th>
+              <th scope="col">Técnico asignado</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Prioridad</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ticket of paginatedTickets; trackBy: trackByTicketId">
+              <td class="dashboard-ticket-number">{{ getTicketNumber(ticket) }}</td>
+              <td class="dashboard-ticket-title">
+                <strong>{{ ticket.titulo }}</strong>
+                <span>{{ ticket.descripcion }}</span>
+              </td>
+              <td>{{ ticket.clienteNombre || 'Usuario' }}</td>
+              <td>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
+              <td>{{ ticket.categoria }}</td>
+              <td>
+                <span class="dashboard-badge" [ngClass]="getPriorityClass(ticket.prioridad)">
+                  {{ getPriorityLabel(ticket.prioridad) }}
+                </span>
+              </td>
+              <td>
+                <span class="dashboard-badge" [ngClass]="getStatusClass(ticket)">
+                  {{ getStatusLabel(getTicketDisplayStatus(ticket)) }}
+                </span>
+              </td>
+              <td class="dashboard-ticket-date">
+                {{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="dashboard-view-button"
+                  [attr.aria-label]="'Ver ticket ' + getTicketNumber(ticket)"
+                  (click)="showDetails(ticket)"
+                >
+                  Ver
+                  <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer *ngIf="filteredTickets.length > 0" class="dashboard-pagination">
+        <span>
+          Mostrando {{ firstVisibleTicket }}-{{ lastVisibleTicket }} de {{ filteredTickets.length }}
+          {{ ticketScope === 'mine' ? 'tickets asignados' : 'tickets' }}
+        </span>
+        <div class="dashboard-page-controls" aria-label="Paginación">
+          <button
+            type="button"
+            aria-label="Página anterior"
+            [disabled]="currentPage === 1"
+            (click)="goToPage(currentPage - 1)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+          </button>
+          <span>{{ currentPage }} / {{ totalPages }}</span>
+          <button
+            type="button"
+            aria-label="Página siguiente"
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(currentPage + 1)"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+      </footer>
+    </section>
   </div>
+
+  <div
+    *ngIf="selectedTicket as ticket"
+    class="dashboard-dialog-backdrop"
+    role="presentation"
+    (click)="closeDetails()"
+  >
+    <section
+      class="dashboard-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dashboard-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dashboard-dialog-heading">
+        <div>
+          <p class="dashboard-eyebrow">{{ getTicketNumber(ticket) }}</p>
+          <h2 id="dashboard-dialog-title">{{ ticket.titulo }}</h2>
+        </div>
+        <button type="button" class="dashboard-dialog-close" aria-label="Cerrar detalles" (click)="closeDetails()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+      <dl class="dashboard-ticket-details">
+        <div><dt>Solicitante</dt><dd>{{ ticket.clienteNombre || 'Usuario' }}</dd></div>
+        <div><dt>Categoría</dt><dd>{{ ticket.categoria }}</dd></div>
+        <div><dt>Prioridad</dt><dd>{{ getPriorityLabel(ticket.prioridad) }}</dd></div>
+        <div><dt>Estado</dt><dd>{{ getStatusLabel(getTicketDisplayStatus(ticket)) }}</dd></div>
+        <div><dt>Técnico asignado</dt><dd>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</dd></div>
+        <div><dt>Fecha</dt><dd>{{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}</dd></div>
+      </dl>
+      <section class="dashboard-ticket-description">
+        <h3>Descripción</h3>
+        <p>{{ ticket.descripcion }}</p>
+      </section>
+      <footer class="dashboard-dialog-actions">
+        <button
+          type="button"
+          class="dashboard-primary-button"
+          [disabled]="!canViewConversation(ticket)"
+          (click)="openConversation(ticket)"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">forum</span>
+          Conversación
+        </button>
+        <p *ngIf="!canViewConversation(ticket)" class="dashboard-readonly-note" role="status">
+          Solo el solicitante, técnico asignado o un administrador pueden ver la conversación.
+        </p>
+      </footer>
+    </section>
+  </div>
+  <app-ticket-conversation
+    *ngIf="conversationTicket as conversation"
+    [ticket]="conversation"
+    (closed)="closeConversation()"
+    (resolved)="markTicketResolved(conversation)"
+  ></app-ticket-conversation>
 </main>
