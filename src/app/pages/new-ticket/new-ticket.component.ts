@@ -7,7 +7,9 @@ import { auth, db } from '../../core/firebase.config';
 import {
   Ticket,
   TicketCategory,
-  TicketPriority
+  TicketPriority,
+  TICKET_DESCRIPTION_MAX_LENGTH,
+  TICKET_TITLE_MAX_LENGTH
 } from '../../models/ticket';
 import { TicketsService } from '../../services/tickets';
 
@@ -71,6 +73,9 @@ export class NewTicketComponent implements OnInit {
   formError = '';
   /** Número secuencial mostrado al confirmar que el ticket fue guardado. */
   createdTicketNumber = '';
+  /** Límites compartidos con las reglas de Firestore. */
+  readonly titleMaxLength = TICKET_TITLE_MAX_LENGTH;
+  readonly descriptionMaxLength = TICKET_DESCRIPTION_MAX_LENGTH;
   /** Nombre de la persona que solicita el ticket, obtenido de su perfil. */
   private requesterName = 'Usuario';
   /** Recibe la navegación y el servicio centralizado de tickets. */
@@ -102,8 +107,9 @@ export class NewTicketComponent implements OnInit {
     try {
       const profile = await getDoc(doc(db, 'users', uid));
       const username = profile.data()?.['username'];
+      // Se usa el valor exacto del perfil: las reglas de Firestore lo comparan literalmente.
       if (typeof username === 'string' && username.trim()) {
-        this.requesterName = username.trim();
+        this.requesterName = username;
       }
     } catch (error) {
       console.error('Error al cargar el nombre del solicitante:', error);
@@ -185,7 +191,7 @@ export class NewTicketComponent implements OnInit {
     return this.technicians.find((technician) => technician.uid === this.selectedTechnicianId) ?? null;
   }
 
-  /** Comprueba el formulario y guarda el ticket sin depender de almacenamiento de archivos. */
+  /** Comprueba el formulario y guarda el ticket con su número secuencial. */
   async submitTicket(form: NgForm): Promise<void> {
     this.formError = '';
     this.createdTicketNumber = '';
@@ -204,11 +210,10 @@ export class NewTicketComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    let createdTicketDocumentId = '';
 
     try {
       const technician = await this.getSelectedTechnician();
-      const ticket: Omit<Ticket, 'id'> = {
+      const ticket: Omit<Ticket, 'id' | 'numero'> = {
         titulo: this.title.trim(),
         categoria: category,
         descripcion: this.description.trim(),
@@ -222,12 +227,10 @@ export class NewTicketComponent implements OnInit {
               tecnicoAsignadoId: technician.uid,
               tecnicoAsignadoNombre: technician.username
             }
-          : {}),
-        adjuntos: []
+          : {})
       };
 
       const createdTicket = await this.ticketsService.crear(ticket);
-      createdTicketDocumentId = createdTicket.id;
 
       this.createdTicketNumber = this.formatTicketNumber(createdTicket.numero);
       this.title = '';
@@ -239,10 +242,10 @@ export class NewTicketComponent implements OnInit {
       form.resetForm();
     } catch (error) {
       console.error('Error al crear el ticket:', error);
-      await this.cleanupFailedSubmission(createdTicketDocumentId);
       this.formError = 'No se pudo enviar el ticket. Revisa la conexión y los permisos de Firebase e inténtalo de nuevo.';
     } finally {
       this.isSubmitting = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -269,17 +272,6 @@ export class NewTicketComponent implements OnInit {
         ? technician['department']
         : ''
     };
-  }
-
-  /** Elimina el documento del ticket si falla una operación posterior a su creación. */
-  private async cleanupFailedSubmission(ticketId: string): Promise<void> {
-    if (ticketId) {
-      try {
-        await this.ticketsService.eliminar(ticketId);
-      } catch (error) {
-        console.error('No se pudo limpiar el ticket incompleto:', error);
-      }
-    }
   }
 
   /** Da formato al número secuencial compartido por todos los perfiles. */

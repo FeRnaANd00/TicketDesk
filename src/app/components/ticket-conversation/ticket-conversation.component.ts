@@ -37,6 +37,8 @@ export class TicketConversationComponent implements OnDestroy, OnInit {
   @Output() resolved = new EventEmitter<void>();
   /** Referencia al historial para desplazarlo al mensaje más reciente. */
   @ViewChild('messagesList') private messagesList?: ElementRef<HTMLDivElement>;
+  /** Campo de escritura, para devolverlo a una línea tras enviar. */
+  @ViewChild('composer') private composer?: ElementRef<HTMLTextAreaElement>;
 
   /** Historial ordenado de mensajes y soluciones guardados para el ticket. */
   messages: TicketMessage[] = [];
@@ -85,7 +87,9 @@ export class TicketConversationComponent implements OnDestroy, OnInit {
 
       this.currentUserId = user.uid;
       this.currentUserRole = role;
-      this.currentUserName = this.readString(profileData?.['username']);
+      // Valor exacto del perfil: las reglas de Firestore lo comparan literalmente.
+      const username = profileData?.['username'];
+      this.currentUserName = typeof username === 'string' && username.trim() ? username : '';
       if (!this.currentUserName) {
         throw new Error('Tu perfil necesita un nombre para participar en la conversación.');
       }
@@ -234,9 +238,10 @@ export class TicketConversationComponent implements OnDestroy, OnInit {
         message
       );
       this.draft = '';
-      this.sendStatus = resolveTicket
-        ? 'Solución enviada y ticket cerrado.'
-        : 'Mensaje enviado.';
+      this.resetComposerHeight();
+      setTimeout(() => this.scrollToLatestMessage(), 0);
+      // Un mensaje normal ya aparece en el chat; solo se avisa del cierre por solución.
+      this.sendStatus = resolveTicket ? 'Solución enviada. El ticket quedó cerrado.' : '';
       if (resolveTicket) {
         this.resolved.emit();
       }
@@ -280,46 +285,49 @@ export class TicketConversationComponent implements OnDestroy, OnInit {
     return this.ticket.id ?? '—';
   }
 
-  /** Traduce el estado del modelo a las etiquetas resumidas de la ficha. */
-  getTicketStatusLabel(): string {
-    if (this.ticket.estado === 'cerrado') {
-      return 'Caso resuelto';
-    }
-
-    return this.ticket.estado === 'en proceso' || Boolean(this.ticket.tecnicoAsignadoId)
-      ? 'Asignado'
-      : 'Nuevo';
+  /** Estado real del ticket, igual que en las listas. */
+  get statusLabel(): string {
+    const labels: Record<Ticket['estado'], string> = {
+      abierto: 'Abierto',
+      'en proceso': 'En proceso',
+      cerrado: 'Cerrado'
+    };
+    return labels[this.ticket.estado] ?? this.ticket.estado;
   }
 
-  /** Devuelve un tono acotado para el estado y evita clases derivadas de texto arbitrario. */
-  getTicketStatusTone(): 'closed' | 'assigned' | 'new' {
+  /** Tono acotado del estado para no derivar clases de texto arbitrario. */
+  get statusTone(): 'open' | 'progress' | 'closed' {
     if (this.ticket.estado === 'cerrado') {
       return 'closed';
     }
-
-    return this.ticket.estado === 'en proceso' || Boolean(this.ticket.tecnicoAsignadoId)
-      ? 'assigned'
-      : 'new';
-  }
-
-  /** Muestra el estado persistido sin asumir una fecha o un autor de cierre. */
-  getTicketStatusDetail(): string {
-    if (this.ticket.estado === 'cerrado') {
-      return 'Cerrado';
-    }
-
-    return this.ticket.estado === 'en proceso' ? 'En proceso' : 'Abierto';
+    return this.ticket.estado === 'en proceso' ? 'progress' : 'open';
   }
 
   /** Convierte la prioridad persistida a una etiqueta legible. */
-  getPriorityLabel(): string {
+  get priorityLabel(): string {
     const labels: Record<Ticket['prioridad'], string> = {
-      baja: 'Prioridad Baja',
-      media: 'Prioridad Media',
-      alta: 'Prioridad Alta',
-      urgente: 'Prioridad Urgente'
+      baja: 'Prioridad baja',
+      media: 'Prioridad media',
+      alta: 'Prioridad alta',
+      urgente: 'Urgente'
     };
-    return labels[this.ticket.prioridad];
+    return labels[this.ticket.prioridad] ?? this.ticket.prioridad;
+  }
+
+  /** Ajusta la altura del campo al texto escrito, hasta un máximo definido en CSS. */
+  autoResize(textarea: HTMLTextAreaElement): void {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  /** Enter envía y Shift+Enter crea una línea nueva; en pantallas táctiles Enter siempre es salto de línea. */
+  onComposerEnter(event: KeyboardEvent): void {
+    const isTouch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    if (event.shiftKey || event.isComposing || isTouch) {
+      return;
+    }
+    event.preventDefault();
+    void this.sendMessage('message');
   }
 
   /** Obtiene la fecha inicial cuando Firestore ya la ha resuelto a Date o Timestamp. */
@@ -355,8 +363,12 @@ export class TicketConversationComponent implements OnDestroy, OnInit {
     return message.id || index;
   }
 
-  private readString(value: unknown): string {
-    return typeof value === 'string' ? value.trim() : '';
+
+  private resetComposerHeight(): void {
+    const element = this.composer?.nativeElement;
+    if (element) {
+      element.style.height = 'auto';
+    }
   }
 
   private isNearBottom(): boolean {

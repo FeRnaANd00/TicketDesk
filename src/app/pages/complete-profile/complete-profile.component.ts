@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { auth, db } from '../../core/firebase.config';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 /**
  * Componente para completar el perfil del usuario.
@@ -27,14 +27,17 @@ export class CompleteProfileComponent {
   /** Estado de carga para evitar múltiples envíos. */
   isLoading = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private changeDetector: ChangeDetectorRef) {}
 
   /**
    * Guarda los datos adicionales del perfil en la colección 'users' de Firestore.
    * Utiliza el UID del usuario autenticado como ID del documento para asegurar la unicidad.
    */
   async onSaveProfile() {
-    if (!this.username || !this.department || !this.phone) {
+    const username = this.username.trim();
+    const department = this.department.trim();
+    const phone = this.phone.trim();
+    if (!username || !department || !phone) {
       alert('Por favor, completa todos los campos requeridos');
       return;
     }
@@ -50,13 +53,13 @@ export class CompleteProfileComponent {
       // Guardamos los datos del perfil junto con el email, el UID y un rol por defecto.
       await setDoc(userDocRef, {
         uid: user.uid,
-        email: user.email,
-        username: this.username,
-        department: this.department,
-        phone: this.phone,
+        email: user.email ?? '',
+        username,
+        department,
+        phone,
         role: 'user', // Asignamos rol de usuario por defecto a todo nuevo registro.
         profileCompleted: true,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       });
 
 
@@ -67,6 +70,7 @@ export class CompleteProfileComponent {
       alert('Ocurrió un error al guardar tu perfil. Por favor, intenta de nuevo.');
     } finally {
       this.isLoading = false;
+      this.changeDetector.markForCheck();
     }
   }
 }

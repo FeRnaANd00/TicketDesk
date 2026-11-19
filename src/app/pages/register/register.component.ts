@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -27,7 +27,7 @@ export class RegisterComponent {
   /** Estado de carga para deshabilitar el botón durante el proceso de creación en Firebase. */
   isLoading = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private changeDetector: ChangeDetectorRef) {}
 
   /**
    * Procesa la creación de la cuenta de usuario.
@@ -50,7 +50,7 @@ export class RegisterComponent {
     this.isLoading = true;
     try {
       // Creación del usuario en Firebase Auth
-      await createUserWithEmailAndPassword(auth, this.email, this.password);
+      await createUserWithEmailAndPassword(auth, this.email.trim(), this.password);
       
       // Se elimina la alerta de éxito para evitar interrupciones en la experiencia del usuario.
       
@@ -72,6 +72,7 @@ export class RegisterComponent {
       }
     } finally {
       this.isLoading = false;
+      this.changeDetector.markForCheck();
     }
   }
 }

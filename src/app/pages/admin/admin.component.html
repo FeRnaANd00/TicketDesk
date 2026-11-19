@@ -4,30 +4,10 @@
   <header class="users-heading">
     <div>
       <p class="users-eyebrow">Control de Acceso</p>
-      <h1># Usuarios y técnicos</h1>
-      <p>Consulta las cuentas registradas y asigna los roles de acceso del equipo.</p>
+      <h1>Usuarios</h1>
+      <p>Consulta las cuentas del equipo y cambia sus roles.</p>
     </div>
   </header>
-
-  <!-- Muestra métricas calculadas con los perfiles existentes en Firestore. -->
-  <section class="users-stats" aria-label="Resumen de miembros">
-    <article class="stat-card">
-      <span class="stat-icon material-symbols-outlined" aria-hidden="true">groups</span>
-      <div>
-        <p>Total miembros</p>
-        <strong>{{ users.length }}</strong>
-        <span>Cuentas registradas</span>
-      </div>
-    </article>
-    <article class="stat-card">
-      <span class="stat-icon technician-stat-icon material-symbols-outlined" aria-hidden="true">support_agent</span>
-      <div>
-        <p>Técnicos</p>
-        <strong>{{ technicianCount }}</strong>
-        <span>Técnicos registrados</span>
-      </div>
-    </article>
-  </section>
 
   <!-- Agrupa filtros, resultados y paginación del directorio. -->
   <section class="directory-card" aria-label="Directorio de usuarios">
@@ -150,28 +130,28 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of paginatedUsers">
-            <td>
+          <tr *ngFor="let user of paginatedUsers" class="clickable-row" (click)="showDetails(user)">
+            <td data-label="Miembro">
               <div class="member-cell">
                 <span class="member-avatar" aria-hidden="true">{{ initials(user.username) || 'U' }}</span>
                 <span class="member-name">{{ user.username }}</span>
               </div>
             </td>
-            <td class="email-cell">{{ user.email || 'Sin correo' }}</td>
-            <td>{{ user.department }}</td>
-            <td>
+            <td data-label="Correo" class="email-cell">{{ user.email || 'Sin correo' }}</td>
+            <td data-label="Departamento">{{ user.department }}</td>
+            <td data-label="Rol">
               <span class="role-badge" [ngClass]="'role-badge-' + user.role">
                 <span class="role-dot" aria-hidden="true"></span>
                 {{ roleLabel(user.role) }}
               </span>
             </td>
-            <td class="details-cell">
+            <td data-label="Acciones" class="details-cell">
               <button
                 class="details-button"
                 type="button"
                 [attr.aria-label]="'Ver detalles de ' + user.username"
                 title="Ver detalles"
-                (click)="showDetails(user)"
+                (click)="$event.stopPropagation(); showDetails(user)"
               >
                 <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
               </button>
@@ -261,7 +241,6 @@
           <div><dt>Correo corporativo</dt><dd>{{ user.email || 'No registrado' }}</dd></div>
           <div><dt>Departamento</dt><dd>{{ user.department }}</dd></div>
           <div><dt>Teléfono</dt><dd>{{ user.phone || 'No registrado' }}</dd></div>
-          <div><dt>Identificador</dt><dd>{{ user.uid }}</dd></div>
         </dl>
       </ng-container>
 
@@ -310,7 +289,6 @@
                 type="button"
                 role="option"
                 [attr.aria-selected]="userForm.role === option.value"
-                [disabled]="option.value === 'user' && user.role !== 'user'"
                 (click)="selectRole(option.value)"
               >
                 <span class="role-picker-option-icon material-symbols-outlined" aria-hidden="true">
@@ -325,17 +303,12 @@
                   class="material-symbols-outlined role-picker-option-check"
                   aria-label="Seleccionado"
                 >check_circle</span>
-                <span
-                  *ngIf="option.value === 'user' && user.role !== 'user'"
-                  class="material-symbols-outlined role-picker-option-lock"
-                  aria-label="No disponible"
-                >lock</span>
               </button>
             </div>
           </div>
         </div>
         <p class="role-change-notice">
-          Este cambio solo modifica los permisos del perfil. No altera el correo ni la contraseña.
+          Solo cambia los permisos; el correo y la contraseña no se modifican.
         </p>
       </form>
 

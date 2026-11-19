@@ -131,7 +131,9 @@ export class TicketsComponent implements OnInit {
         this.currentUserRole = role;
       }
       this.canManageTickets = role === 'admin' || role === 'technician';
-      this.currentUserName = this.readString(profile.data()?.['username']);
+      // Valor exacto del perfil: las reglas de Firestore lo comparan literalmente.
+      const username = profile.data()?.['username'];
+      this.currentUserName = typeof username === 'string' && username.trim() ? username : '';
       this.ticketScope = this.canManageTickets
         && this.route.snapshot.queryParamMap.get('scope') === 'all'
         ? 'all'
@@ -168,11 +170,11 @@ export class TicketsComponent implements OnInit {
 
   get pageDescription(): string {
     if (!this.canManageTickets) {
-      return 'Consulta y da seguimiento a las incidencias que has reportado.';
+      return 'Incidencias que has reportado.';
     }
     return this.ticketScope === 'mine'
-      ? 'Incidencias asignadas a tu cuenta, incluidas las ya resueltas.'
-      : 'Consulta los tickets de todos los técnicos; solo puedes gestionar los que te corresponden.';
+      ? 'Incidencias asignadas a tu cuenta.'
+      : 'Cola completa de soporte.';
   }
 
   /** Limita la lista a los tickets asignados al usuario cuando el alcance es personal. */
@@ -354,6 +356,22 @@ export class TicketsComponent implements OnInit {
     this.ticketEditForm.tecnicoAsignadoId = technician?.uid ?? '';
     this.ticketEditForm.tecnicoAsignadoNombre = technician?.username ?? '';
     this.openTicketEditDropdown = null;
+  }
+
+  /**
+   * Estados que puede elegir la sesión actual. El soporte (admin o técnico asignado)
+   * gestiona cualquier estado; el solicitante solo puede mantenerlo o cerrar su ticket.
+   */
+  get availableEditStatusOptions(): Array<{ value: Ticket['estado']; label: string }> {
+    const ticket = this.selectedTicket;
+    const isSupport = this.currentUserRole === 'admin'
+      || (this.currentUserRole === 'technician' && ticket?.tecnicoAsignadoId === this.currentUserId);
+    if (isSupport || !ticket) {
+      return this.ticketEditStatusOptions;
+    }
+    return this.ticketEditStatusOptions.filter(
+      option => option.value === ticket.estado || option.value === 'cerrado'
+    );
   }
 
   /** Obtiene la etiqueta visible del estado seleccionado en el editor. */
@@ -681,10 +699,6 @@ export class TicketsComponent implements OnInit {
     };
   }
 
-  /** Normaliza campos de perfil opcionales para usarlos en controles y mensajes. */
-  private readString(value: unknown): string {
-    return typeof value === 'string' ? value.trim() : '';
-  }
 
   /** Proporciona una clave estable para que Angular actualice las filas correctamente. */
   trackByTicketId(index: number, ticket: Ticket): string | number {

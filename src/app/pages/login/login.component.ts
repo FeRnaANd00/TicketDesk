@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -36,7 +36,7 @@ export class LoginComponent {
   isGoogleLoading = false;
 
   /** Recibe el router para navegar al panel después de autenticar al usuario. */
-  constructor(private router: Router) {}
+  constructor(private router: Router, private changeDetector: ChangeDetectorRef) {}
 
   /**
    * Inicia sesión utilizando el método tradicional de correo y contraseña.
@@ -69,6 +69,7 @@ export class LoginComponent {
       }
     } finally {
       this.isLoading = false;
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -102,6 +103,7 @@ export class LoginComponent {
       }
     } finally {
       this.isGoogleLoading = false;
+      this.changeDetector.markForCheck();
     }
   }
 

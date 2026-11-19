@@ -97,3 +97,31 @@
   .dashboard-filters { align-items:stretch; flex-direction:column; }
   .dashboard-pagination { align-items:flex-start; flex-direction:column; }
 }
+
+/* En teléfonos cada fila se muestra como tarjeta con sus etiquetas, sin scroll horizontal. */
+@media (max-width:640px) {
+  .dashboard-table-scroll { overflow:visible; }
+  .dashboard-tickets-table,.dashboard-tickets-table tbody,.dashboard-tickets-table tr,.dashboard-tickets-table td { display:block; }
+  .dashboard-tickets-table { min-width:0; }
+  .dashboard-tickets-table thead { display:none; }
+  .dashboard-tickets-table tbody { display:grid; gap:.6rem; padding:.7rem; }
+  .dashboard-tickets-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem .8rem; padding:.85rem; background:#fff; border:1px solid var(--line); border-radius:.85rem; }
+  .dashboard-tickets-table tbody tr:hover { background:#fff; }
+  .dashboard-tickets-table td { display:flex; min-width:0; max-width:none; flex-direction:column; align-items:flex-start; gap:.18rem; padding:0; border:0!important; font-size:.76rem; white-space:normal; overflow-wrap:anywhere; text-align:left!important; }
+  .dashboard-tickets-table td::before { content:attr(data-label); color:#8791a1; font-size:.6rem; font-weight:750; letter-spacing:.05em; text-transform:uppercase; }
+  .dashboard-tickets-table td:not([data-label])::before,.dashboard-tickets-table td.dashboard-ticket-number::before,.dashboard-tickets-table td.dashboard-ticket-title::before,.dashboard-tickets-table td[data-label="Acciones"]::before { display:none; }
+  .dashboard-tickets-table td:not([data-label]),.dashboard-tickets-table td.dashboard-ticket-number,.dashboard-tickets-table td.dashboard-ticket-title,.dashboard-tickets-table td[data-label="Acciones"] { grid-column:1/-1; }
+  .dashboard-tickets-table td[data-label="Acciones"] { align-items:stretch; padding-top:.15rem; }
+  .dashboard-tickets-table .dashboard-ticket-title { width:100%; }
+  .dashboard-tickets-table .dashboard-ticket-title strong { white-space:normal; }
+  .dashboard-view-button { justify-content:center; width:100%; padding:.55rem; background:#fff4f3; }
+  .dashboard-page { padding:.85rem; }
+  .dashboard-content { gap:1rem; }
+  .ticket-list-heading,.dashboard-list-toolbar { padding:.8rem; }
+  .dashboard-pagination { padding:.75rem .8rem; }
+}
+
+/* Toda la fila abre el detalle. */
+.clickable-row { cursor:pointer; }
+.clickable-row:hover { background:#fff8f7!important; }
+.dashboard-heading p strong { color:var(--ink); }

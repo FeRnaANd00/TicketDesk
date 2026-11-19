@@ -31,8 +31,6 @@ const DASHBOARD_LOAD_TIMEOUT_MS = 15_000;
 })
 export class DashboardComponent implements OnInit {
   username = 'Usuario';
-  email = '';
-  department = '';
   userRole: DashboardRole | null = null;
   currentUserId = '';
   tickets: Ticket[] = [];
@@ -105,8 +103,6 @@ export class DashboardComponent implements OnInit {
         || user.displayName?.trim()
         || user.email?.split('@')[0]
         || 'Usuario';
-      this.email = this.readString(profileData['email']) || user.email || '';
-      this.department = this.readString(profileData['department']);
 
       this.tickets = await this.withTimeout(
         this.ticketsService.listarTodos(),
@@ -196,16 +192,6 @@ export class DashboardComponent implements OnInit {
       .filter(ticket => this.getTicketDisplayStatus(ticket) === 'cerrado').length;
   }
 
-  get profileInitials(): string {
-    return this.username
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0))
-      .join('')
-      .toLocaleUpperCase('es');
-  }
-
   get statusFilterLabel(): string {
     return this.statusOptions.find((option) => option.value === this.statusFilter)?.label
       ?? 'Todos los estados';
@@ -218,12 +204,6 @@ export class DashboardComponent implements OnInit {
 
   get ticketListTitle(): string {
     return this.ticketScope === 'mine' ? 'Tickets asignados a mí' : 'Tickets de todos los técnicos';
-  }
-
-  get ticketListDescription(): string {
-    return this.ticketScope === 'mine'
-      ? 'Incidencias asignadas a tu cuenta, incluidas las ya cerradas.'
-      : 'Consulta tickets de todos los técnicos; solo puedes gestionar los que te corresponden.';
   }
 
   get ticketListCountLabel(): string {

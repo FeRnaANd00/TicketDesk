@@ -1,16 +1,14 @@
 import { Injectable } from '@angular/core';
 import { db } from '../core/firebase.config';
 import { Ticket } from '../models/ticket';
-import { 
-  collection, 
-  getDocs, 
-  getDoc, 
+import {
+  collection,
+  getDocs,
   runTransaction,
   deleteField,
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
+  updateDoc,
+  doc,
+  query,
   where,
   Query,
   orderBy,
@@ -114,18 +112,8 @@ export class TicketsService {
 
     await updateDoc(
       doc(db, this.collectionName, ticketId, 'messages', messageId),
-      { text: updatedText }
+      { text: updatedText, editedAt: serverTimestamp() }
     );
-  }
-
-  /**
-   * Obtiene la información detallada de un ticket específico mediante su ID.
-   * @param id El identificador único del ticket.
-   * @returns Promesa con el Ticket encontrado o null si no existe.
-   */
-  async obtener(id: string): Promise<Ticket | null> {
-    const docSnap = await getDoc(doc(db, this.collectionName, id));
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Ticket : null;
   }
 
   /**
@@ -156,16 +144,6 @@ export class TicketsService {
     });
 
     return { id: ticketRef.id, numero };
-  }
-
-  /**
-   * Actualiza parcialmente los datos de un ticket existente.
-   * @param id El identificador del ticket a modificar.
-   * @param cambios Objeto que contiene solo los campos a actualizar.
-   * @returns Promesa que se resuelve cuando la actualización es exitosa.
-   */
-  async actualizar(id: string, cambios: Partial<Ticket>): Promise<void> {
-    await updateDoc(doc(db, this.collectionName, id), cambios);
   }
 
   /** Actualiza exclusivamente categoría, estado y asignación del ticket. */
@@ -207,15 +185,6 @@ export class TicketsService {
       tecnicoAsignadoNombre: tecnicoNombre,
       estado: 'en proceso'
     });
-  }
-
-  /**
-   * Elimina un ticket de la base de datos permanentemente.
-   * @param id El identificador del ticket a eliminar.
-   * @returns Promesa que se resuelve cuando la eliminación es exitosa.
-   */
-  async eliminar(id: string): Promise<void> {
-    await deleteDoc(doc(db, this.collectionName, id));
   }
 
   /** Convierte las fechas de Firestore a milisegundos para ordenar la lista. */

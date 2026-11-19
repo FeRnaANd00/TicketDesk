@@ -9,17 +9,9 @@ export type TicketCategory =
   | 'Redes y comunicaciones'
   | 'Desarrollador de sistema';
 
-/** Metadatos de un archivo guardado en Firebase Storage y asociado al ticket. */
-export interface TicketAttachment {
-  /** Nombre original del archivo seleccionado por el solicitante. */
-  nombre: string;
-  /** Tipo MIME usado para identificar el formato del archivo. */
-  tipo: string;
-  /** Tamaño del archivo expresado en bytes. */
-  tamano: number;
-  /** Ruta del objeto dentro de Firebase Storage. */
-  ruta: string;
-}
+/** Límites de longitud compartidos con las reglas de Firestore. */
+export const TICKET_TITLE_MAX_LENGTH = 120;
+export const TICKET_DESCRIPTION_MAX_LENGTH = 5000;
 
 /** Estructura persistida en Firestore para un ticket de soporte. */
 export interface Ticket {
@@ -47,6 +39,4 @@ export interface Ticket {
   tecnicoAsignadoId?: string;
   /** Nombre visible del técnico seleccionado. */
   tecnicoAsignadoNombre?: string;
-  /** Archivos opcionales subidos a Firebase Storage. */
-  adjuntos: TicketAttachment[];
 }

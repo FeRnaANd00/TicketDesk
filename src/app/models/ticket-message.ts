@@ -12,7 +12,9 @@ export interface TicketMessage {
   authorRole: 'admin' | 'technician' | 'user';
   type: TicketMessageType;
   createdAt: Date | Timestamp | FieldValue;
+  /** Momento de la última edición; ausente si el mensaje nunca se modificó. */
+  editedAt?: Date | Timestamp | FieldValue;
 }
 
 /** Campos aceptados al publicar un mensaje nuevo en la conversación. */
-export type NewTicketMessage = Omit<TicketMessage, 'id' | 'createdAt'>;
+export type NewTicketMessage = Omit<TicketMessage, 'id' | 'createdAt' | 'editedAt'>;

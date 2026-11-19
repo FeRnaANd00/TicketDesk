@@ -49,3 +49,14 @@
 .profile-spinner { width:2rem; height:2rem; border:3px solid #f4d8da; border-top-color:var(--red); border-radius:50%; animation:profile-spin .8s linear infinite; }
 .profile-retry-button { min-height:2.5rem; margin-top:.35rem; padding:.55rem .85rem; color:#fff; background:var(--red); border:0; border-radius:.7rem; cursor:pointer; font:inherit; font-size:.78rem; font-weight:750; }
 @keyframes profile-spin { to { transform:rotate(360deg); } }
+
+/* Reduce márgenes y avatar en teléfonos. */
+@media (max-width:640px) {
+  .profile-page { padding:.85rem; }
+  .profile-page-heading { margin-bottom:1rem; }
+  .profile-brand { margin-bottom:.8rem; }
+  .profile-identity-card { align-items:flex-start; flex-direction:column; }
+  .profile-avatar { width:3.2rem; height:3.2rem; border-radius:.9rem; font-size:1rem; }
+  .profile-metric-card { min-height:0; }
+  .profile-tickets-link { width:100%; justify-content:center; }
+}

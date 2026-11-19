@@ -38,7 +38,7 @@
           id="ticket-title"
           name="title"
           type="text"
-          maxlength="120"
+          [maxlength]="titleMaxLength"
           placeholder="Ej: Falla al conectar a la VPN corporativa"
           [(ngModel)]="title"
           #titleControl="ngModel"
@@ -205,6 +205,7 @@
           placeholder="Explica qué estabas haciendo cuando ocurrió el incidente:"
           [(ngModel)]="description"
           #descriptionControl="ngModel"
+          [maxlength]="descriptionMaxLength"
           required
         ></textarea>
         <p *ngIf="descriptionControl.invalid && descriptionControl.touched" class="field-note field-note-error">

@@ -18,16 +18,16 @@
       <div>
         <p class="dashboard-eyebrow">Dashboard</p>
         <h1>Hola, {{ username }}</h1>
-        <p>Resumen de tus tickets y actividad de soporte.</p>
+        <p *ngIf="userRole === 'technician'; else adminSubtitle">
+          Tienes <strong>{{ myActiveTicketCount }}</strong> {{ myActiveTicketCount === 1 ? 'ticket activo asignado' : 'tickets activos asignados' }}
+          y has resuelto <strong>{{ myClosedTicketCount }}</strong>.
+        </p>
+        <ng-template #adminSubtitle><p>Resumen de toda la mesa de ayuda.</p></ng-template>
       </div>
       <div class="dashboard-heading-actions">
-        <a *ngIf="userRole === 'admin'" class="dashboard-secondary-button" routerLink="/users">
-          <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
-          Usuarios
-        </a>
         <button
           type="button"
-          class="dashboard-primary-button refresh-button"
+          class="dashboard-secondary-button refresh-button"
           [disabled]="isLoading"
           (click)="loadDashboard()"
         >
@@ -49,7 +49,7 @@
         <div>
           <p>Abiertos</p>
           <strong>{{ openTicketCount }}</strong>
-          <span>Tickets que requieren atención</span>
+          <span>Sin atender</span>
         </div>
       </a>
 
@@ -79,36 +79,9 @@
         <div>
           <p>Resueltos / Cerrados</p>
           <strong>{{ closedTicketCount }}</strong>
-          <span>Histórico completo, sin límite de fecha</span>
+          <span>Histórico</span>
         </div>
       </a>
-    </section>
-
-    <section class="dashboard-profile-card" [class.dashboard-admin-profile]="userRole === 'admin'">
-      <div class="profile-heading">
-        <div class="profile-avatar" aria-hidden="true">{{ profileInitials }}</div>
-        <div class="profile-copy">
-          <p class="dashboard-eyebrow">{{ userRole === 'technician' ? 'Perfil del técnico' : 'Perfil' }}</p>
-          <h2>{{ username }}</h2>
-          <span>{{ userRole === 'technician' ? (department || 'Técnico de soporte') : 'Administrador' }}</span>
-          <a *ngIf="email" [href]="'mailto:' + email">{{ email }}</a>
-        </div>
-      </div>
-
-      <div *ngIf="userRole === 'technician'" class="profile-stats">
-        <div>
-          <span>Tickets asignados a mí</span>
-          <strong>{{ myActiveTicketCount }} <small>activos</small></strong>
-        </div>
-        <div>
-          <span>Tickets resueltos</span>
-          <strong>{{ myClosedTicketCount }} <small>históricos</small></strong>
-        </div>
-      </div>
-      <div *ngIf="userRole === 'admin'" class="admin-profile-note">
-        <span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>
-        Panel administrativo
-      </div>
     </section>
 
     <section class="dashboard-list-card" aria-label="Listado de tickets">
@@ -119,7 +92,6 @@
             <h2>{{ ticketListTitle }}</h2>
             <span class="ticket-count-pill">{{ ticketListCountLabel }}</span>
           </div>
-          <p>{{ ticketListDescription }}</p>
         </div>
         <div class="dashboard-scope-toggle" role="group" aria-label="Alcance de tickets">
           <button
@@ -142,7 +114,7 @@
           (click)="exportTickets()"
         >
           <span class="material-symbols-outlined" aria-hidden="true">file_download</span>
-          Exportar lista
+          Exportar
         </button>
       </header>
 
@@ -279,34 +251,34 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let ticket of paginatedTickets; trackBy: trackByTicketId">
-              <td class="dashboard-ticket-number">{{ getTicketNumber(ticket) }}</td>
-              <td class="dashboard-ticket-title">
+            <tr *ngFor="let ticket of paginatedTickets; trackBy: trackByTicketId" class="clickable-row" (click)="showDetails(ticket)">
+              <td data-label="ID" class="dashboard-ticket-number">{{ getTicketNumber(ticket) }}</td>
+              <td data-label="Título" class="dashboard-ticket-title">
                 <strong>{{ ticket.titulo }}</strong>
                 <span>{{ ticket.descripcion }}</span>
               </td>
-              <td>{{ ticket.clienteNombre || 'Usuario' }}</td>
-              <td>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
-              <td>{{ ticket.categoria }}</td>
-              <td>
+              <td data-label="Solicitante">{{ ticket.clienteNombre || 'Usuario' }}</td>
+              <td data-label="Técnico">{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
+              <td data-label="Categoría">{{ ticket.categoria }}</td>
+              <td data-label="Prioridad">
                 <span class="dashboard-badge" [ngClass]="getPriorityClass(ticket.prioridad)">
                   {{ getPriorityLabel(ticket.prioridad) }}
                 </span>
               </td>
-              <td>
+              <td data-label="Estado">
                 <span class="dashboard-badge" [ngClass]="getStatusClass(ticket)">
                   {{ getStatusLabel(getTicketDisplayStatus(ticket)) }}
                 </span>
               </td>
-              <td class="dashboard-ticket-date">
+              <td data-label="Fecha" class="dashboard-ticket-date">
                 {{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}
               </td>
-              <td>
+              <td data-label="Acciones">
                 <button
                   type="button"
                   class="dashboard-view-button"
                   [attr.aria-label]="'Ver ticket ' + getTicketNumber(ticket)"
-                  (click)="showDetails(ticket)"
+                  (click)="$event.stopPropagation(); showDetails(ticket)"
                 >
                   Ver
                   <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>

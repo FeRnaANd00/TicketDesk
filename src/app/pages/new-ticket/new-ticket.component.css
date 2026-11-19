@@ -86,3 +86,16 @@
   .form-actions { flex-direction:column-reverse; align-items:stretch; }
   .cancel-button,.submit-button { width:100%; }
 }
+
+/* Compacta el formulario en teléfonos estrechos sin quitar ningún control. */
+@media (max-width:640px) {
+  .ticket-page { padding:.85rem; }
+  .ticket-page-heading { margin-bottom:1rem; }
+  .ticket-page-heading>p:last-child { font-size:.85rem; }
+  .ticket-form-card { gap:1rem; padding:1rem; border-radius:1rem; }
+  .form-field textarea { min-height:8rem; }
+  .ticket-tips-card { padding:1rem; border-radius:1rem; }
+}
+@media (max-width:380px) {
+  .priority-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}

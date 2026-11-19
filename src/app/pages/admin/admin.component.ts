@@ -243,10 +243,6 @@ export class AdminComponent implements OnInit {
   }
 
   /** Devuelve el total de técnicos activos en el directorio de perfiles. */
-  get technicianCount(): number {
-    return this.countFor('technician');
-  }
-
   /** Cambia la pestaña y devuelve la tabla a la primera página. */
   selectFilter(filter: UserFilter): void {
     this.activeFilter = filter;
@@ -321,7 +317,11 @@ export class AdminComponent implements OnInit {
     this.dialogError = '';
   }
 
-  /** Indica si el administrador puede asignar un rol al perfil seleccionado. */
+  /**
+   * Indica si el administrador puede asignar un rol al perfil seleccionado.
+   * Los administradores no se pueden degradar desde la app (protección del último admin);
+   * eso se hace manualmente desde la consola de Firebase.
+   */
   canChangeRole(user: ManagedUser | null): boolean {
     return !!user && user.uid !== auth.currentUser?.uid && user.role !== 'admin';
   }
@@ -379,11 +379,6 @@ export class AdminComponent implements OnInit {
 
     const selectedUser = this.selectedUser;
     const selectedRole = this.userForm.role;
-    if (selectedRole === 'user' && selectedUser.role !== 'user') {
-      this.dialogError = 'No se permite quitar roles elevados desde esta pantalla.';
-      return;
-    }
-
     this.isSavingUser = true;
     try {
       if (selectedRole !== selectedUser.role) {

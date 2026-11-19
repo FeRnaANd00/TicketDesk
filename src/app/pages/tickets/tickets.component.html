@@ -5,23 +5,16 @@
     <div>
       <p class="tickets-eyebrow">Mesa de ayuda</p>
       <h1>{{ pageTitle }}</h1>
-      <p>{{ pageDescription }}</p>
+      <p>
+        <span class="active-count">{{ activeTicketCount }} {{ activeTicketCount === 1 ? 'activo' : 'activos' }}</span>
+        {{ pageDescription }}
+      </p>
     </div>
     <a class="create-ticket-button" routerLink="/new-ticket">
       <span class="material-symbols-outlined" aria-hidden="true">add</span>
       Nuevo ticket
     </a>
   </header>
-
-  <!-- Destaca el total de incidencias que todavía no se han cerrado. -->
-  <section class="active-summary" aria-label="Resumen de tickets activos">
-    <span class="summary-icon material-symbols-outlined" aria-hidden="true">confirmation_number</span>
-    <div>
-      <p>Tickets abiertos (activos)</p>
-      <strong>{{ activeTicketCount }}</strong>
-    </div>
-    <span class="summary-caption">excluye los tickets cerrados</span>
-  </section>
 
   <!-- Advierte cuando Firebase no pudo determinar si el perfil puede editar. -->
   <div *ngIf="permissionError" class="ticket-edit-permission-error" role="alert">
@@ -177,21 +170,21 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId">
-            <td class="ticket-number">{{ getTicketNumber(ticket) }}</td>
-            <td class="ticket-title-cell">
+          <tr *ngFor="let ticket of filteredTickets; trackBy: trackByTicketId" class="clickable-row" (click)="showDetails(ticket)">
+            <td data-label="ID" class="ticket-number">{{ getTicketNumber(ticket) }}</td>
+            <td data-label="Título" class="ticket-title-cell">
               <strong>{{ ticket.titulo }}</strong>
               <span>{{ ticket.descripcion }}</span>
             </td>
-            <td>{{ ticket.clienteNombre || 'Usuario' }}</td>
-            <td>{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
-            <td>{{ ticket.categoria }}</td>
-            <td>
+            <td data-label="Solicitante">{{ ticket.clienteNombre || 'Usuario' }}</td>
+            <td data-label="Técnico">{{ ticket.tecnicoAsignadoNombre || 'Sin asignar' }}</td>
+            <td data-label="Categoría">{{ ticket.categoria }}</td>
+            <td data-label="Prioridad">
               <span class="priority-badge" [ngClass]="getPriorityClass(ticket.prioridad)">
                 {{ getPriorityLabel(ticket.prioridad) }}
               </span>
             </td>
-            <td>
+            <td data-label="Estado">
               <span
                 class="status-badge"
                   [ngClass]="getDisplayStatusClass(ticket)"
@@ -199,15 +192,15 @@
                 {{ getDisplayStatus(ticket) }}
               </span>
             </td>
-            <td class="ticket-date">
+            <td data-label="Fecha" class="ticket-date">
               {{ getCreationDate(ticket) ? (getCreationDate(ticket) | date: 'dd/MM/yyyy, HH:mm') : '—' }}
             </td>
-            <td>
+            <td data-label="Acciones">
               <button
                 type="button"
                 class="view-ticket-button"
                 [attr.aria-label]="'Ver ticket ' + getTicketNumber(ticket)"
-                (click)="showDetails(ticket)"
+                (click)="$event.stopPropagation(); showDetails(ticket)"
               >
                 Ver
                 <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
@@ -328,7 +321,7 @@
               aria-label="Estados disponibles"
             >
               <button
-                *ngFor="let option of ticketEditStatusOptions"
+                *ngFor="let option of availableEditStatusOptions"
                 type="button"
                 class="department-filter-option"
                 [class.department-filter-option-active]="ticketEditForm.estado === option.value"
@@ -456,9 +449,9 @@
         </ng-container>
         <ng-template #detailsActions>
           <button
+            *ngIf="canViewConversation(ticket)"
             type="button"
             class="ticket-cancel-edit-button"
-            [disabled]="!canViewConversation(ticket)"
             (click)="openConversation(ticket)"
           >
             <span class="material-symbols-outlined" aria-hidden="true">forum</span>
@@ -482,16 +475,6 @@
           >
             <span class="material-symbols-outlined" aria-hidden="true">person_add</span>
             {{ isSavingTicket ? 'Asignando...' : 'Asignarme' }}
-          </button>
-          <button
-            *ngIf="!canEditTicket(ticket) && !canSelfAssignTicket(ticket)"
-            type="button"
-            class="ticket-save-edit-button"
-            disabled
-            aria-disabled="true"
-          >
-            <span class="material-symbols-outlined" aria-hidden="true">edit_off</span>
-            Editar ticket
           </button>
         </ng-template>
       </footer>

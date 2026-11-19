@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { signOut } from 'firebase/auth';
@@ -34,7 +34,7 @@ export class WorkspaceHeaderComponent implements OnInit {
   isLoggingOut = false;
 
   /** Recibe el router para devolver al usuario a la pantalla de login. */
-  constructor(private router: Router) {}
+  constructor(private router: Router, private changeDetector: ChangeDetectorRef) {}
 
   /** Carga el usuario activo de Firebase y su perfil para el encabezado. */
   async ngOnInit(): Promise<void> {
@@ -78,6 +78,8 @@ export class WorkspaceHeaderComponent implements OnInit {
       this.accountRoleLoaded.emit(role);
     } catch (error) {
       console.error('Error al cargar la identidad del usuario:', error);
+    } finally {
+      this.changeDetector.markForCheck();
     }
   }
 
@@ -126,6 +128,7 @@ export class WorkspaceHeaderComponent implements OnInit {
       alert('No se pudo cerrar la sesión. Inténtalo de nuevo.');
     } finally {
       this.isLoggingOut = false;
+      this.changeDetector.markForCheck();
     }
   }
 }

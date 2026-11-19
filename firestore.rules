@@ -21,32 +21,62 @@ service cloud.firestore {
       return signedIn() && userDocument(request.auth.uid).data.role == 'technician';
     }
 
+    /** Texto obligatorio, no vacío y con longitud máxima. */
+    function isText(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    function hasValidProfileFields(data) {
+      return isText(data.username, 100)
+        && isText(data.department, 100)
+        && isText(data.phone, 40);
+    }
+
+    function validCategories() {
+      return ['Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'];
+    }
+
+    function validStates() {
+      return ['abierto', 'en proceso', 'cerrado'];
+    }
+
+    // ---------------------------------------------------------------- users
     match /users/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
+
+      // Cada persona crea su propio perfil y siempre empieza como 'user'.
       allow create: if signedIn()
         && request.auth.uid == uid
-        && request.resource.data.role == 'user'
-        && request.resource.data.uid == uid
         && request.resource.data.keys().hasOnly([
           'uid', 'email', 'username', 'department', 'phone', 'role',
           'profileCompleted', 'createdAt'
-        ]);
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && hasValidProfileFields(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+
       allow update: if signedIn() && (
+        // La persona edita sus datos, nunca su rol ni su correo.
         (request.auth.uid == uid
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.email == resource.data.email
           && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['username', 'department', 'phone', 'profileCompleted']))
+            .hasOnly(['username', 'department', 'phone', 'profileCompleted'])
+          && hasValidProfileFields(request.resource.data))
+        // Un admin cambia el rol de otra cuenta; los admins no se degradan desde la app.
         || (isAdmin()
           && request.auth.uid != uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
-          && request.resource.data.role in ['admin', 'technician']
-          && (resource.data.role != 'admin' || request.resource.data.role == 'admin'))
+          && request.resource.data.role in ['user', 'technician', 'admin']
+          && resource.data.role != 'admin')
       );
       allow delete: if false;
     }
 
+    // ------------------------------------------------- technicianDirectory
+    // Ficha pública mínima de los técnicos, sincronizada con users/{uid}.role.
     match /technicianDirectory/{uid} {
       allow get, list: if signedIn();
       allow create, update: if isAdmin()
@@ -59,6 +89,8 @@ service cloud.firestore {
         && userDocumentAfterWrite(uid).data.role != 'technician';
     }
 
+    // ------------------------------------------------------ ticketCounters
+    // Contador global que se actualiza en la misma transacción que crea el ticket.
     match /ticketCounters/{counterId} {
       function pairedTicketMatches() {
         let ticket = getAfter(
@@ -87,119 +119,136 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ------------------------------------------------------------- tickets
     match /tickets/{ticketId} {
       function isRequester() {
         return signedIn() && resource.data.clienteId == request.auth.uid;
       }
 
       function isAssignedTechnician() {
-        return signedIn() && resource.data.tecnicoAsignadoId == request.auth.uid;
+        return isTechnician() && resource.data.get('tecnicoAsignadoId', '') == request.auth.uid;
       }
 
+      /** Sin asignación, o asignado a un técnico real con su nombre real. */
       function hasValidSupportAssignment() {
+        let data = request.resource.data;
         return (
-          !('tecnicoAsignadoId' in request.resource.data.keys())
-          && !('tecnicoAsignadoNombre' in request.resource.data.keys())
+          !('tecnicoAsignadoId' in data.keys())
+          && !('tecnicoAsignadoNombre' in data.keys())
         ) || (
-          request.resource.data.tecnicoAsignadoId is string
-          && request.resource.data.tecnicoAsignadoNombre is string
+          data.tecnicoAsignadoId is string
+          && data.tecnicoAsignadoNombre is string
+          && exists(/databases/$(database)/documents/technicianDirectory/$(data.tecnicoAsignadoId))
           && get(
-            /databases/$(database)/documents/technicianDirectory/$(request.resource.data.tecnicoAsignadoId)
-          ).data.uid == request.resource.data.tecnicoAsignadoId
-          && get(
-            /databases/$(database)/documents/technicianDirectory/$(request.resource.data.tecnicoAsignadoId)
-          ).data.username == request.resource.data.tecnicoAsignadoNombre
+            /databases/$(database)/documents/technicianDirectory/$(data.tecnicoAsignadoId)
+          ).data.username == data.tecnicoAsignadoNombre
         );
       }
 
       function hasValidTicketCategoryAndState() {
-        return request.resource.data.categoria in [
-            'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
-          ]
-          && request.resource.data.estado in ['abierto', 'en proceso', 'cerrado'];
+        return request.resource.data.categoria in validCategories()
+          && request.resource.data.estado in validStates();
+      }
+
+      function changedOnly(fields) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
       }
 
       function isValidAdminEdit() {
         return isAdmin()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'categoria', 'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'
-          ])
+          && changedOnly(['categoria', 'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'])
           && hasValidTicketCategoryAndState()
           && hasValidSupportAssignment();
       }
 
-      function isValidRequesterOrAssigneeEdit() {
-        return signedIn()
+      /** El técnico asignado gestiona categoría y cualquier estado. */
+      function isValidAssigneeEdit() {
+        return isAssignedTechnician()
           && resource.data.estado != 'cerrado'
-          && (isRequester() || (isTechnician() && isAssignedTechnician()))
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['categoria', 'estado'])
+          && changedOnly(['categoria', 'estado'])
           && hasValidTicketCategoryAndState();
       }
 
+      /** El solicitante puede recategorizar o cerrar su ticket, pero no moverlo de estado. */
+      function isValidRequesterEdit() {
+        return isRequester()
+          && resource.data.estado != 'cerrado'
+          && changedOnly(['categoria', 'estado'])
+          && hasValidTicketCategoryAndState()
+          && request.resource.data.estado in [resource.data.estado, 'cerrado'];
+      }
+
+      /** Un técnico toma un ticket abierto sin asignar y pasa a 'en proceso'. */
       function isValidSelfAssignment() {
         return isTechnician()
           && resource.data.estado == 'abierto'
-          && (!('tecnicoAsignadoId' in resource.data.keys())
-            || resource.data.tecnicoAsignadoId == '')
+          && resource.data.get('tecnicoAsignadoId', '') == ''
           && request.resource.data.tecnicoAsignadoId == request.auth.uid
-          && request.resource.data.tecnicoAsignadoNombre
-            == userDocument(request.auth.uid).data.username
           && request.resource.data.estado == 'en proceso'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'
-          ])
+          && changedOnly(['estado', 'tecnicoAsignadoId', 'tecnicoAsignadoNombre'])
           && hasValidSupportAssignment();
       }
 
+      // Los técnicos ven la cola completa para poder autoasignarse tickets.
       allow get, list: if signedIn()
-        && (isAdmin() || isTechnician() || isRequester() || isAssignedTechnician());
+        && (isAdmin() || isTechnician() || isRequester());
+
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'titulo', 'categoria', 'descripcion', 'estado', 'prioridad',
+          'fechaCreacion', 'clienteId', 'clienteNombre',
+          'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'numero'
+        ])
         && request.resource.data.clienteId == request.auth.uid
+        && request.resource.data.clienteNombre == userDocument(request.auth.uid).data.username
+        && isText(request.resource.data.titulo, 120)
+        && isText(request.resource.data.descripcion, 5000)
+        && request.resource.data.estado == 'abierto'
+        && request.resource.data.prioridad in ['baja', 'media', 'alta', 'urgente']
+        && request.resource.data.categoria in validCategories()
+        && request.resource.data.fechaCreacion == request.time
+        && hasValidSupportAssignment()
         && request.resource.data.numero is int
         && request.resource.data.numero
           == getAfter(/databases/$(database)/documents/ticketCounters/global).data.lastNumber
         && getAfter(/databases/$(database)/documents/ticketCounters/global).data.lastTicketId
-          == ticketId
-        && request.resource.data.estado == 'abierto'
-        && request.resource.data.prioridad in ['baja', 'media', 'alta', 'urgente']
-        && request.resource.data.categoria in [
-          'Soporte Técnico', 'Redes y comunicaciones', 'Desarrollador de sistema'
-        ]
-        && request.resource.data.keys().hasOnly([
-          'titulo', 'categoria', 'descripcion', 'estado', 'prioridad',
-          'fechaCreacion', 'clienteId', 'clienteNombre',
-          'tecnicoAsignadoId', 'tecnicoAsignadoNombre', 'adjuntos', 'numero'
-        ]);
+          == ticketId;
+
       allow update: if signedIn() && (
         isValidAdminEdit()
-        || isValidRequesterOrAssigneeEdit()
+        || isValidAssigneeEdit()
+        || isValidRequesterEdit()
         || isValidSelfAssignment()
-        || (isRequester()
-          && resource.data.estado != 'cerrado'
-          && resource.data.adjuntos.size() == 0
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['adjuntos']))
       );
       allow delete: if isAdmin();
     }
 
-    // Restringe la conversación al solicitante, técnico asignado y administradores.
+    // ------------------------------------------------------------ messages
+    // Conversación limitada al solicitante, el técnico asignado y los administradores.
     match /tickets/{ticketId}/messages/{messageId} {
       function parentTicketData() {
         return get(/databases/$(database)/documents/tickets/$(ticketId)).data;
+      }
+
+      function isAssignedToMe() {
+        return isTechnician() && parentTicketData().get('tecnicoAsignadoId', '') == request.auth.uid;
       }
 
       function isConversationParticipant() {
         return signedIn()
           && (isAdmin()
             || parentTicketData().clienteId == request.auth.uid
-            || (isTechnician()
-              && parentTicketData().tecnicoAsignadoId == request.auth.uid));
+            || isAssignedToMe());
+      }
+
+      function conversationIsOpen() {
+        return isAdmin() || parentTicketData().estado != 'cerrado';
       }
 
       allow get, list: if isConversationParticipant();
+
       allow create: if isConversationParticipant()
-        && (isAdmin() || parentTicketData().estado != 'cerrado')
+        && conversationIsOpen()
         && request.resource.data.keys().hasOnly([
           'text', 'authorId', 'authorName', 'authorRole', 'type', 'createdAt'
         ])
@@ -207,26 +256,21 @@ service cloud.firestore {
           'text', 'authorId', 'authorName', 'authorRole', 'type', 'createdAt'
         ])
         && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.authorName is string
-        && request.resource.data.authorName.size() > 0
         && request.resource.data.authorName == userDocument(request.auth.uid).data.username
         && request.resource.data.authorRole == userDocument(request.auth.uid).data.role
         && request.resource.data.type in ['message', 'solution']
-        && (request.resource.data.type == 'message'
-          || isAdmin()
-          || (isTechnician()
-            && parentTicketData().tecnicoAsignadoId == request.auth.uid))
-        && request.resource.data.text is string
-        && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 4000
+        && (request.resource.data.type == 'message' || isAdmin() || isAssignedToMe())
+        && isText(request.resource.data.text, 4000)
         && request.resource.data.createdAt == request.time;
+
+      // Solo el autor edita su texto; queda registrada la fecha de edición.
       allow update: if isConversationParticipant()
-        && (isAdmin() || parentTicketData().estado != 'cerrado')
+        && conversationIsOpen()
         && resource.data.authorId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])
-        && request.resource.data.text is string
-        && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 4000;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+        && isText(request.resource.data.text, 4000)
+        && request.resource.data.editedAt == request.time;
+
       allow delete: if false;
     }
   }

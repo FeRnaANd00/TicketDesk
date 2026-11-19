@@ -4,20 +4,20 @@
   - flex: Centra el contenido vertical y horizontalmente.
   - bg-[#f8f9ff]: Color de fondo suave para evitar la fatiga visual.
 -->
-<main class="min-h-//screen w-full flex flex-col justify-center items-center p-4 md:p-8 bg-[#f8f9ff]">
+<main class="min-h-screen w-full flex flex-col justify-center items-center p-3 sm:p-4 md:p-8 bg-[#f8f9ff]">
   
   <!-- TARJETA DE REGISTRO
        - max-w-5xl: Limita el ancho en pantallas desktop.
        - flex-col lg:flex-row: Diseño responsivo (columna en móvil, fila en desktop).
        - shadow-2xl rounded-3xl: Estética moderna con sombras profundas y bordes redondeados.
   -->
-  <div class="w-full max-w-5xl flex flex-col lg:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white">
+  <div class="w-full max-w-5xl flex flex-col lg:flex-row shadow-2xl rounded-2xl sm:rounded-3xl overflow-hidden bg-white">
     
     <!-- PANEL IZQUIERDO: Branding y Motivación
          - bg-gradient-to-br: Degradado rojo corporativo.
          - relative: Para permitir el posicionamiento del elemento decorativo difuminado.
     -->
-    <div class="relative w-full lg:w-5/12 bg-gradient-to-br from-[#bb0112] to-red-800 text-white p-8 lg:p-12 flex flex-col justify-between overflow-hidden">
+    <div class="relative w-full lg:w-5/12 bg-gradient-to-br from-[#bb0112] to-red-800 text-white px-6 py-6 sm:p-8 lg:p-12 flex flex-col justify-between overflow-hidden">
       
       <!-- Elemento visual: Círculo blanco difuminado para dar profundidad al diseño -->
       <div class="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
@@ -25,20 +25,20 @@
       <!-- Bloque de Texto Informativo -->
       <div class="relative z-10">
         <!-- Logo Corporativo -->
-        <div class="flex items-center mb-8">
-          <img alt="Logo" class="h-12 w-auto object-contain filter drop-shadow-md" src="/claudecode.png"/>
+        <div class="flex items-center mb-4 sm:mb-8">
+          <img alt="Logo" class="h-9 sm:h-12 w-auto object-contain filter drop-shadow-md" src="/claudecode.png"/>
         </div>
         
         <!-- Mensajes de Bienvenida para nuevos agentes -->
-        <div class="space-y-4">
-          <span class="block font-semibold tracking-widest uppercase text-red-100 text-sm">Únete a la Mesa de Ayuda</span>
-          <h1 class="text-4xl lg:text-5xl font-bold leading-tight">Crea tu cuenta de agente.</h1>
-          <p class="text-red-100/90 text-lg">Regístrate para comenzar a gestionar incidencias y brindar soporte eficiente.</p>
+        <div class="space-y-2 sm:space-y-4">
+          <span class="block font-semibold tracking-widest uppercase text-red-100 text-xs sm:text-sm">Únete a la Mesa de Ayuda</span>
+          <h1 class="text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight">Crea tu cuenta de agente.</h1>
+          <p class="text-red-100/90 text-sm sm:text-lg">Regístrate para comenzar a gestionar incidencias y brindar soporte eficiente.</p>
         </div>
       </div>
       
       <!-- Imagen Ilustrativa: Refuerza el concepto de soporte técnico -->
-      <div class="relative z-10 my-8 flex justify-center">
+      <div class="relative z-10 my-8 hidden lg:flex justify-center">
         <img alt="Soporte" class="w-full max-w-sm h-auto object-contain drop-shadow-2xl rounded-2xl" src="/soporte-ilustracion.svg"/>
       </div>
     </div>
@@ -47,19 +47,19 @@
          - w-full lg:w-7/12: Espacio predominante para el formulario.
          - p-8 md:p-16: Padding amplio para mejorar la legibilidad.
     -->
-    <div class="w-full lg:w-7/12 p-8 md:p-16 flex flex-col justify-center bg-white">
-      <div class="max-w-md w-full mx-auto space-y-8">
+    <div class="w-full lg:w-7/12 px-5 py-6 sm:p-8 md:p-16 flex flex-col justify-center bg-white">
+      <div class="max-w-md w-full mx-auto space-y-6 sm:space-y-8">
         
         <!-- Encabezado del Formulario -->
         <div class="space-y-2">
-          <h2 class="text-3xl font-bold tracking-tight text-[#121c2a]">Crear cuenta en TicketDesk</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#121c2a]">Crear cuenta en TicketDesk</h2>
           <p class="text-[#584237]">Ingresa tus datos para obtener acceso al sistema de soporte.</p>
         </div>
         
         <!-- Formulario de Registro
              - (submit): Ejecuta onRegister() y previene el refresco de página.
         -->
-        <form class="space-y-6" (submit)="onRegister(); $event.preventDefault()">
+        <form class="space-y-4 sm:space-y-6" (submit)="onRegister(); $event.preventDefault()">
           
           <!-- Campo: Correo electrónico -->
           <div class="space-y-2">

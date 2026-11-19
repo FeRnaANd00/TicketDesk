@@ -1,65 +1,95 @@
-# TicketDesk - Sistema de Gestión de Incidencias
+# TicketDesk — Sistema de gestión de incidencias
 
-TicketDesk es una plataforma centralizada de soporte interno diseñada para resolver incidencias corporativas de manera ágil y clara.
+Mesa de ayuda interna: los usuarios reportan incidencias, los técnicos las atienden y los administradores gestionan el equipo. Está hecha con **Angular 22 + Tailwind CSS** y usa **Firebase** (Authentication + Firestore) como backend. No necesita servidor propio ni Cloud Functions, así que funciona en el plan gratuito *Spark*.
 
-## 🚀 Características Principales
-- **Autenticación Corporativa**: Acceso seguro mediante Firebase Auth.
-- **Gestión de Tickets**: Operaciones completas de creación, lectura, actualización y eliminación (CRUD).
-- **Diseño Moderno**: Interfaz responsiva construida con Angular y Tailwind CSS.
-- **Almacenamiento en Tiempo Real**: Integración con Firebase Firestore para datos persistentes y actualizados.
+## Funcionalidades
 
-## 🛠️ Tecnologías Utilizadas
-- **Frontend**: Angular 22
-- **Estilos**: Tailwind CSS 3
-- **Backend/DB**: Firebase (Auth & Firestore)
-- **Iconografía**: Google Material Symbols
+| Rol | Puede |
+|---|---|
+| **Usuario** | Registrarse (correo o Google), crear tickets, ver los suyos, recategorizarlos o cerrarlos, y conversar con soporte. |
+| **Técnico** | Todo lo anterior, más ver la cola completa, autoasignarse tickets abiertos, cambiar su estado y publicar **soluciones**, que cierran el ticket. Tiene acceso al Dashboard. |
+| **Administrador** | Todo lo anterior sobre cualquier ticket, más asignar técnicos, eliminar tickets y cambiar roles (usuario ⇄ técnico, promover a admin). |
 
-## ⚙️ Instalación y Ejecución
+- Numeración secuencial global: `TKD-0001`, `TKD-0002`… El número se asigna en una transacción junto con el ticket.
+- Conversación en tiempo real por ticket. Los mensajes editados quedan marcados como *Editado*.
+- **Toda la seguridad vive en `firestore.rules`**. Los guards de Angular solo controlan la navegación, y las reglas tienen sus propios tests automatizados.
 
-### Requisitos Previos
-- Node.js (versión compatible con Angular 22)
-- npm
+## Requisitos
 
-### Pasos para ejecutar localmente
-1. Clona el repositorio.
-2. Instala las dependencias:
+- **Node.js 22 LTS o superior** (probado con Node 24) y npm.
+- **Java 11+**: solo hace falta para el emulador de Firestore (`npm run test:rules` y `npm run emulators`).
+- Un proyecto de Firebase propio. Si solo quieres verlo funcionando, puedes usar el proyecto que ya viene configurado.
+
+La CLI de Firebase se instala como dependencia del proyecto y se usa con `npx firebase`. No hace falta instalarla globalmente.
+
+## Puesta en marcha rápida
+
+```bash
+git clone <url-del-repo>
+cd TicketDesk
+npm ci          # instala exactamente las versiones del package-lock
+npm start       # http://localhost:4200
+```
+
+Con esto la app se conecta al proyecto de Firebase configurado en `src/environments/environment.ts`.
+
+## Usar tu propio proyecto de Firebase
+
+1. En la [consola de Firebase](https://console.firebase.google.com/), crea un proyecto y añade una **app web**.
+2. En **Authentication → Método de acceso**, habilita *Correo/contraseña* y, si quieres, *Google*.
+3. Crea una base de datos de **Firestore** en modo producción.
+4. Copia la configuración web de la app en `src/environments/environment.ts`.
+5. Cambia el ID del proyecto en `.firebaserc`.
+6. Inicia sesión en la CLI y publica las reglas:
    ```bash
-   npm install
+   npx firebase login
+   npm run deploy:rules
    ```
-3. Inicia el servidor de desarrollo:
-   ```bash
-   npm run start
-   ```
-4. Abre tu navegador en `http://localhost:4200/`.
+7. **Crea el primer administrador.** Regístrate en la app y completa tu perfil. Después, en la consola, abre *Firestore → `users` → tu documento* y cambia `role` de `user` a `admin`. Desde ese momento puedes gestionar los demás roles en la sección **Usuarios**.
 
-## 📁 Estructura del Proyecto
-- `src/app/core`: Configuraciones globales y servicios base (ej. `firebase.config.ts`).
-- `src/app/layouts`: Contenedores compartidos de las secciones autenticadas (ej. navegación y barra superior).
-- `src/app/models`: Definiciones de interfaces y tipos de datos (ej. `ticket.ts`).
-- `src/app/services`: Lógica de negocio y comunicación con la API/DB (ej. `tickets.ts`).
-- `src/app/pages`: Componentes de vista y pantallas de la aplicación.
+> La `apiKey` de Firebase identifica al proyecto, no es un secreto. Aun así, en Google Cloud Console conviene restringirla a tus dominios.
 
-## 🎫 Crear Tickets
-- El formulario vive en `src/app/pages/new-ticket` y guarda los datos del ticket en la colección `tickets` de Firestore.
-- La pantalla no permite adjuntar archivos ni tomar fotos; los tickets nuevos guardan `adjuntos: []` para conservar compatibilidad con el esquema actual.
-- Cada ticket nuevo recibe en la misma transacción un número consecutivo global (`TKD-0001`, `TKD-0002`, ...). Los tickets guardados antes de introducir este contador conservan su identificador original.
-- La pantalla `/tickets` muestra los tickets creados por la persona autenticada; administradores y técnicos pueden consultar la cola completa y filtrar entre tickets asignados a sí mismos o a cualquier técnico. La tabla incluye siempre el técnico asignado.
-- Los estados visibles son `Abierto`, `En proceso` y `Resuelto`; los tickets asignados se clasifican como `En proceso`. Las tarjetas del Dashboard abren `/tickets` con el estado y alcance seleccionados.
-- Administradores pueden editar cualquier ticket y sus asignaciones. En tickets abiertos, el solicitante y el técnico asignado pueden cambiar categoría y estado; los técnicos solo pueden autoasignarse tickets abiertos sin asignar. Los demás técnicos pueden consultar el ticket, pero no editarlo ni leer su conversación. En tickets cerrados, solo administradores pueden editar o responder.
-- La opción **Conversación** abre un historial en tiempo real bajo `tickets/{ticketId}/messages`; guarda cada mensaje por separado de la descripción y muestra los mensajes normales en gris y las soluciones en azul.
-- El solicitante y el técnico asignado pueden conversar; los administradores también pueden participar. Cada participante puede editar únicamente sus propios mensajes. Solo el técnico asignado o un administrador pueden publicar soluciones; al enviar una solución, el ticket se cierra de forma atómica.
-- El componente compartido de conversación está en `src/app/components/ticket-conversation`, y el tipo de cada mensaje en `src/app/models/ticket-message.ts`.
-- El contador requiere las reglas adicionales de `ticketCounters` declaradas en `firestore.rules`. Revisa y publica las reglas después de cada cambio antes de habilitar en Firebase la creación y gestión de tickets.
-- Si se habilitan adjuntos en el futuro, Firebase Storage es el servicio apropiado para archivos. Firestore no sustituye al almacenamiento de archivos: los documentos tienen un límite de 1 MiB y guardar binarios como texto puede aumentar consumo y costos. La disponibilidad y facturación de Storage dependen de la configuración actual del proyecto.
-- En la sección Usuarios, un administrador puede asignar los roles `technician` y `admin` a otros perfiles desde Firestore. Al asignar el rol técnico, se sincroniza una ficha mínima (nombre y departamento) en `technicianDirectory` para el selector de asignación.
-- Las reglas locales de Firestore y Storage están en `firestore.rules` y `storage.rules`; revísalas y pruébalas antes de desplegarlas, ya que el despliegue puede reemplazar las reglas activas del proyecto.
+## Scripts
 
-## 👥 Administración de usuarios
-- La pantalla Usuarios permite asignar los roles `technician` y `admin` a otros perfiles mediante una escritura atómica en Firestore que sincroniza el directorio técnico.
-- Las reglas de `firestore.rules` limitan los cambios de rol a administradores; no permiten cambiar el propio rol ni degradar perfiles que ya son administradores.
-- La pantalla no crea ni elimina cuentas. Esas operaciones de Firebase Authentication requieren las Cloud Functions de `functions/`, cuyo despliegue puede requerir el plan Blaze.
-- Para preparar las funciones, instala Node.js 20 y Firebase CLI, configura el proyecto Firebase y ejecuta `npm install --prefix functions`. Después de revisar la configuración, despliega únicamente las funciones con `firebase deploy --only functions`.
-- Para publicar solo los cambios de autorización de Firestore, revisa las reglas y ejecuta `firebase deploy --only firestore:rules --project proyectoangular-314b2`. No despliegues Storage como parte de este cambio.
+| Comando | Qué hace |
+|---|---|
+| `npm start` | Servidor de desarrollo en `http://localhost:4200`. |
+| `npm run build` | Compilación de producción en `dist/ticketdesk/browser`. |
+| `npm test` | Tests unitarios de Angular (Vitest). |
+| `npm run test:rules` | Arranca el emulador de Firestore y ejecuta los tests de seguridad de `tests/`. |
+| `npm run emulators` | Emuladores locales (Auth, Firestore, Hosting) con su interfaz web. |
+| `npm run deploy:rules` | Publica solo las reglas e índices de Firestore. |
+| `npm run deploy` | Compila y publica la app en Firebase Hosting junto con las reglas. |
 
-## 📝 Nota sobre el Desarrollo
-Todo el código ha sido documentado siguiendo el estándar JSDoc para facilitar el mantenimiento y la escalabilidad del sistema.
+## Estructura
+
+```
+firestore.rules            Reglas de seguridad (fuente de verdad de los permisos)
+firestore.indexes.json     Índices de Firestore
+tests/                     Tests de las reglas contra el emulador
+src/app/
+  core/                    Inicialización de Firebase
+  models/                  Tipos: Ticket, TicketMessage
+  services/                Acceso a Firestore (tickets, roles)
+  layouts/                 Shell autenticado: cabecera y barra lateral
+  pages/                   login, register, complete-profile, dashboard,
+                           tickets, new-ticket, profile, admin (usuarios)
+  components/              Conversación de un ticket
+  *.guard.ts               auth (sesión), profile (perfil completo), role (rol)
+```
+
+## Modelo de datos (Firestore)
+
+| Colección | Contenido |
+|---|---|
+| `users/{uid}` | Perfil: `username`, `department`, `phone`, `email`, `role` (`user` · `technician` · `admin`). |
+| `technicianDirectory/{uid}` | Ficha pública mínima de cada técnico, usada en los selectores de asignación. Se sincroniza al cambiar roles. |
+| `tickets/{id}` | `numero`, `titulo`, `descripcion`, `categoria`, `prioridad`, `estado`, solicitante y técnico asignado. |
+| `tickets/{id}/messages/{id}` | Mensajes de la conversación (`message` o `solution`). |
+| `ticketCounters/global` | Último número de ticket asignado. |
+
+## Limitaciones conocidas
+
+- Las listas de tickets cargan toda la colección. Con miles de tickets convendría paginar las consultas.
+- El registro está abierto a cualquier correo o cuenta de Google. Para limitarlo a un dominio corporativo, añade una condición sobre `request.auth.token.email` en la regla `create` de `users`.
+- Crear o eliminar cuentas de Authentication, y degradar administradores, se hace desde la consola de Firebase.

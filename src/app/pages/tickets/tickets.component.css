@@ -11,12 +11,6 @@
 .create-ticket-button:hover,.secondary-button:hover { background:#820b14; transform:translateY(-1px); }
 .create-ticket-button .material-symbols-outlined { font-size:1.15rem; }
 
-/* Destaca el conteo de tickets abiertos antes de los controles de búsqueda. */
-.active-summary { display:flex; min-height:6.25rem; align-items:center; gap:.9rem; margin-bottom:1.25rem; padding:1rem 1.2rem; background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
-.summary-icon { display:grid; width:2.9rem; height:2.9rem; flex:0 0 auto; place-items:center; color:var(--red); background:#fff1f0; border-radius:.85rem; font-size:1.5rem; }
-.active-summary p { margin:0; color:var(--muted); font-size:.8rem; font-weight:650; }
-.active-summary strong { display:block; margin-top:.15rem; font-size:1.55rem; line-height:1.15; }
-.summary-caption { margin-left:auto; color:#8791a1; font-size:.76rem; }
 
 /* Contiene controles y tabla, adaptando el ancho sin ocultar columnas. */
 .tickets-list-card { background:#fff; border:1px solid var(--line); border-radius:1rem; box-shadow:0 8px 22px rgba(18,28,42,.035); }
@@ -88,7 +82,6 @@
 @media (max-width:760px) {
   .tickets-heading { align-items:flex-start; }
   .create-ticket-button { flex:0 0 auto; }
-  .summary-caption { display:none; }
 }
 @media (max-width:540px) {
   .tickets-heading { flex-direction:column; }
@@ -97,3 +90,33 @@
   .ticket-dialog { padding:1rem; }
   .ticket-detail-grid { grid-template-columns:1fr; gap:.75rem; }
 }
+
+/* En teléfonos cada fila se muestra como tarjeta con sus etiquetas, sin scroll horizontal. */
+@media (max-width:640px) {
+  .table-scroll { overflow:visible; }
+  .tickets-table,.tickets-table tbody,.tickets-table tr,.tickets-table td { display:block; }
+  .tickets-table { min-width:0; }
+  .tickets-table thead { display:none; }
+  .tickets-table tbody { display:grid; gap:.6rem; padding:.7rem; }
+  .tickets-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem .8rem; padding:.85rem; background:#fff; border:1px solid var(--line); border-radius:.85rem; }
+  .tickets-table tbody tr:hover { background:#fff; }
+  .tickets-table td { display:flex; min-width:0; max-width:none; flex-direction:column; align-items:flex-start; gap:.18rem; padding:0; border:0!important; font-size:.76rem; white-space:normal; overflow-wrap:anywhere; text-align:left!important; }
+  .tickets-table td::before { content:attr(data-label); color:#8791a1; font-size:.6rem; font-weight:750; letter-spacing:.05em; text-transform:uppercase; }
+  .tickets-table td:not([data-label])::before,.tickets-table td.ticket-number::before,.tickets-table td.ticket-title-cell::before,.tickets-table td[data-label="Acciones"]::before { display:none; }
+  .tickets-table td:not([data-label]),.tickets-table td.ticket-number,.tickets-table td.ticket-title-cell,.tickets-table td[data-label="Acciones"] { grid-column:1/-1; }
+  .tickets-table td[data-label="Acciones"] { align-items:stretch; padding-top:.15rem; }
+  .tickets-table .ticket-title-cell { width:100%; }
+  .tickets-table .ticket-title-cell strong { white-space:normal; }
+  .view-ticket-button { justify-content:center; width:100%; padding:.55rem; background:#fff4f3; }
+  .tickets-page { padding:.85rem; }
+  .tickets-heading { gap:.8rem; margin-bottom:1rem; }
+  .tickets-heading p:last-child { font-size:.82rem; }
+  .create-ticket-button { width:100%; }
+  .list-toolbar { padding:.75rem; }
+  .list-state { min-height:11rem; padding:1.5rem 1rem; }
+}
+
+/* Toda la fila abre el detalle. */
+.clickable-row { cursor:pointer; }
+.clickable-row:hover { background:#fff8f7!important; }
+.active-count { display:inline-flex; margin-right:.35rem; padding:.1rem .5rem; color:#9c0a18; background:#fff0ef; border-radius:99px; font-size:.75rem; font-weight:750; }

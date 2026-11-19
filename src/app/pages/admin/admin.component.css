@@ -3,20 +3,11 @@
 .users-page { --ink:#121c2a; --muted:#697586; --red:#a20d19; --line:#e6eaf1; padding:clamp(1rem,3vw,2rem); color:var(--ink); background:#f8f9ff; }
 
 /* Alinea el encabezado de la sección con el ancho del directorio. */
-.users-heading { display:flex; max-width:76rem; align-items:center; justify-content:space-between; gap:1rem; margin:0 auto 1.3rem; }
+.users-heading { display:flex; max-width:76rem; align-items:center; justify-content:space-between; gap:1rem; margin:0 auto 1.1rem; }
 .users-eyebrow { margin:0 0 .4rem; color:var(--red); font-size:.72rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
 .users-heading h1 { margin:0; font-size:clamp(1.6rem,3vw,2rem); }
 .users-heading>div>p:last-child { max-width:48rem; margin:.45rem 0 0; color:var(--muted); font-size:.85rem; line-height:1.55; }
 
-/* Presenta los totales calculados desde las cuentas de Firestore. */
-.users-stats { display:grid; max-width:76rem; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:0 auto 1.2rem; }
-.stat-card { display:flex; align-items:center; gap:.8rem; padding:1rem 1.2rem; background:#fff; border:1px solid var(--line); border-radius:.9rem; }
-.stat-icon { display:grid; width:2.7rem; height:2.7rem; flex:0 0 auto; place-items:center; color:var(--red); background:#fff0ef; border-radius:.8rem; }
-.technician-stat-icon { color:#805300; background:#fff4d8; }
-.stat-card p,.stat-card strong,.stat-card div>span { display:block; margin:0; }
-.stat-card p { color:var(--muted); font-size:.78rem; font-weight:600; }
-.stat-card strong { margin:.12rem 0; font-size:1.45rem; }
-.stat-card div>span { color:#8992a1; font-size:.72rem; }
 
 /* Agrupa filtros, resultados y paginación en una tarjeta. */
 .directory-card { position:relative; max-width:76rem; margin:auto; background:#fff; border:1px solid var(--line); border-radius:1rem; }
@@ -92,9 +83,36 @@
 /* Ajusta tarjetas, filtros y paginación en pantallas compactas. */
 @media (max-width:700px) {
   .users-heading { align-items:flex-start; flex-direction:column; }
-  .users-stats { gap:.6rem; }
-  .stat-card { gap:.5rem; padding:.75rem; }
-  .stat-icon { width:2.3rem; height:2.3rem; }
   .directory-filters { align-items:stretch; flex-direction:column; }
   .table-pagination { flex-wrap:wrap; justify-content:center; }
 }
+
+/* En teléfonos cada fila se muestra como tarjeta con sus etiquetas, sin scroll horizontal. */
+@media (max-width:640px) {
+  .table-scroll { overflow:visible; }
+  .users-table,.users-table tbody,.users-table tr,.users-table td { display:block; }
+  .users-table { min-width:0; }
+  .users-table thead { display:none; }
+  .users-table tbody { display:grid; gap:.6rem; padding:.7rem; }
+  .users-table tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem .8rem; padding:.85rem; background:#fff; border:1px solid var(--line); border-radius:.85rem; }
+  .users-table tbody tr:hover { background:#fff; }
+  .users-table td { display:flex; min-width:0; max-width:none; flex-direction:column; align-items:flex-start; gap:.18rem; padding:0; border:0!important; font-size:.76rem; white-space:normal; overflow-wrap:anywhere; text-align:left!important; }
+  .users-table td::before { content:attr(data-label); color:#8791a1; font-size:.6rem; font-weight:750; letter-spacing:.05em; text-transform:uppercase; }
+  .users-table td:not([data-label])::before,.users-table td[data-label="Miembro"]::before,.users-table td[data-label="Correo"]::before,.users-table td[data-label="Acciones"]::before { display:none; }
+  .users-table td:not([data-label]),.users-table td[data-label="Miembro"],.users-table td[data-label="Correo"],.users-table td[data-label="Acciones"] { grid-column:1/-1; }
+  .users-table td[data-label="Acciones"] { align-items:stretch; padding-top:.15rem; }
+  .users-table td[data-label="Miembro"]::before { display:none; }
+  .users-table .member-cell { min-width:0; }
+  .users-table .details-cell { width:auto; }
+  .details-button { width:100%; height:2.3rem; }
+  .users-page { padding:.85rem; }
+  .users-heading { margin-bottom:1rem; }
+  .users-heading>div>p:last-child { font-size:.8rem; }
+  .directory-filters { padding:.75rem; }
+  .role-tabs { padding:0 .75rem; }
+  .table-pagination { padding:.6rem .75rem; }
+}
+
+/* Toda la fila abre el detalle. */
+.clickable-row { cursor:pointer; }
+.clickable-row:hover { background:#fff8f7!important; }
